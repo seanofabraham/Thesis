@@ -22,7 +22,7 @@ import plotly.express as px
 Generates or creates reference trajectory from EGI data. 
 """
 
-generateNewTrajectory = True
+generateNewTrajectory = False
 plotcheck = False
 
 if generateNewTrajectory == True:      
@@ -34,8 +34,8 @@ referenceTrajectory = pd.read_pickle("./referenceTrajectory.pkl")
 
 # Generate track reference position vectory
 
-if generateNewTrajrectory == True:    
-    generateRPV(plotcheck, referenceTrajectory)
+if generateNewTrajectory == True:    
+    generateTrackRPV(plotcheck, referenceTrajectory)
     
 trackRPV = pd.read_pickle("./trackRPV.pkl")    
     
