@@ -17,67 +17,22 @@ import numpy as np
 from scipy import integrate
 import plotly.express as px
 
-"""
-TRUTH GEN - Scripts used to generate true track trajectory
+#%% Generate New Truth
+generateNewTruth = False
 
-Truth data taken from EGI on sled run 83B-1. 
-"""
-#%%  Truth Gen Step 1 - Import data from EGI that was on sled
-# EGI_accel = importEGIData(['Time', 'Ax','Ay','Az'])
-# EGI_vel = importEGIData(['Time', 'Vx','Vy', 'Vz'])
+if generateNewTruth == True:      
+    generateTrackTruth()
 
-EGI_accel =  pd.read_csv('EGI_accel.csv',names = ['Time', 'Ax','Ay','Az'])
-EGI_vel = pd.read_csv('EGI_vel.csv',names = ['Time', 'Vx','Vy', 'Vz'])
+#%% Import Reference Trajectory
 
-EGI_accel_vel = EGI_accel.join(EGI_vel[['Vx','Vy','Vz']])
+referenceTrajectory = pd.read_pickle("./referenceTrajectory.pkl")
 
-#%% Truth Gen Step 2 - Trim data to focus on actual sled run.
-startTime = 399600
-stopTime = 399700
+#%% Plot Reference Trajectory
 
-EGI_accel_vel_trim = EGI_accel_vel[(EGI_accel_vel['Time'] > startTime) & (EGI_accel_vel['Time'] < stopTime) ] # trim accelerometer output
-
-Tdur = EGI_accel_vel_trim['Time'].max() - EGI_accel_vel_trim['Time'].min()
-Tlen = len(EGI_accel_vel_trim['Time'])
-
-NewTimeSeries = np.linspace(0, Tdur, Tlen)
-
-EGI_accel_vel_trim.loc[:,'New Time'] = NewTimeSeries
-                                                                     
-#%% Truth Gen Step 3 - Smooth Acceleration in X-axis
-# EGI_accel_smoothed_array = savgol_filter(EGI_accel_vel_trim['Ax'],25,3)
-
-EGI_accel_presmoothed = EGI_accel_vel_trim[['Ax']]
-
-EGI_accel_smoothed_array = lpf(EGI_accel_vel_trim[['Ax']].to_numpy(),50,Tdur/Tlen)
-
-EGI_accel_vel_trim['Ax'] = EGI_accel_presmoothed
-
-# EGI_accel_vel_trim['Ax_smooth'] = pd.Series(EGI_accel_smoothed_array)
-
-#%% Truth Gen Step 4 - Create a DataFrame to house all truth data
-trackTruth = pd.DataFrame()
-
-trackTruth['Time'] = EGI_accel_vel_trim['New Time']
-trackTruth['Accel_x'] = EGI_accel_smoothed_array
-trackTruth['EGIVel_x'] = EGI_accel_vel_trim['Vx']
-
-# Create New Time Series
-trackTruth['Time'] = np.linspace(0, Tdur, Tlen)
-
-# Change initial acceleration in X to zero until launch. Determined visually
-trackTruth['Accel_x'][:1145] = 0
-
-# Change final acceleration after stop to zero. Determined visually
-trackTruth['Accel_x'][4992:] = 0
-
-#%% Demonstrate repeated time measurment issue. 
-# plot to show Accel_x
-
-plotcheck = False
+plotcheck = True
 # Plot 
 if plotcheck == True:
-    fig = px.scatter(x = trackTruth['Time'],y = trackTruth['Accel_x'])
+    fig = px.scatter(x = referenceTrajectory['Time'],y = referenceTrajectory['Accel_x'])
     fig.show()                    
 
 # # Get rid of duplicate times
