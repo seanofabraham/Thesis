@@ -23,11 +23,11 @@ Generates or creates reference trajectory from EGI data.
 """
 
 generateNewTrajectory = False
-plotcheck = False
+plotcheck = True
 
 if generateNewTrajectory == True:      
-    generateReferenceTrajectory(plotcheck)
-
+    generateReferenceTrajectory()
+    
 # Import Reference Trajectory
 
 referenceTrajectory = pd.read_pickle("./referenceTrajectory.pkl")
@@ -35,19 +35,30 @@ referenceTrajectory = pd.read_pickle("./referenceTrajectory.pkl")
 # Generate track reference position vectory
 
 if generateNewTrajectory == True:    
-    generateTrackRPV(plotcheck, referenceTrajectory)
+    generateTrackRPV(referenceTrajectory)
     
-trackRPV = pd.read_pickle("./trackRPV.pkl")    
-    
+trackRPV = pd.read_pickle("./trackRPV.pkl") 
+
+if plotcheck == True:
+    figRefTraj = px.scatter(x = referenceTrajectory['Time'],y = referenceTrajectory['Accel_x'])
+    figRefTraj.show()   
+
+    figRPV = px.scatter(x = trackRPV['Time'],y = trackRPV['Interupters_DwnTrk_dist'])
+    figRPV.add_trace(go.Scatter(x = referenceTrajectory['Time'],y = referenceTrajectory['IntDist_x']))
+    figRPV.show()   
+        
 #%% ACCEL SIM Step 1 - Simulate a Acceleromter with Bias using Accelerometer class
 """
 ACCEL SIM - Scripts used to generate simulated accelerometer output based on truth input
 
 Using smoothed acceleration truth data to simulate
 """
-N_model = 2
+N_model = 1
 
 AccelOne = Accelerometer()
+
+
+
 # Create data frame to house data
 sensorSim = pd.DataFrame()
 sensorSim['Time'] = referenceTrajectory['Time']
@@ -70,11 +81,11 @@ sensorSim['Dx'] = integrate.cumulative_trapezoid(y = sensorSim['Vx'],x = sensorS
 Error - Scripts used to compare accelerometer simulation versus track truth
 """
 Dist_Error = pd.DataFrame()
-Dist_Error['Time'] = trackRefVec['Time']
+Dist_Error['Time'] = trackRPV['Time']
 
 # Interpolate Sensor Sim to Track
 
-trackRefVec['SensorInterpDist'] = np.interp(trackRPV['Time'],sensorSim['Time'],sensorSim['Dx'])
+trackRPV['SensorInterpDist'] = np.interp(trackRPV['Time'],sensorSim['Time'],sensorSim['Dx'])
 
 px.scatter(trackRPV, x = 'Time', y = ['SensorInterpDist','Interupters_DwnTrk_dist'])
 
@@ -82,7 +93,7 @@ Dist_Error['De_x'] = trackRPV['Interupters_DwnTrk_dist'] - trackRPV['SensorInter
 
 # Compute Velocity Error
 Ve_x = np.diff(Dist_Error['De_x'])/np.diff(Dist_Error['Time'])
-Ve_t = (trackRefVec['Time'].head(-1) + np.diff(Dist_Error['Time'])/2).to_numpy() # UPDATE TIME TAG FOR DIFFERENTIATION.
+Ve_t = (trackRPV['Time'].head(-1) + np.diff(Dist_Error['Time'])/2).to_numpy() # UPDATE TIME TAG FOR DIFFERENTIATION.
 
 Vel_Error = pd.DataFrame()
 Vel_Error['Time'] = Ve_t
