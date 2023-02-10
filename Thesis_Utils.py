@@ -13,7 +13,6 @@ from tkinter import filedialog
 import plotly.express as px
 import numpy as np
 from scipy import integrate
-import plotly.graph_objects as go
 
 
 def importEGIData(Headers):
@@ -64,7 +63,7 @@ def lpf(x, omega_c, T):
     return y 
 
 
-def generateReferenceTrajectory(plotcheck):
+def generateReferenceTrajectory():
     
     EGI_accel = importEGIData(['Time', 'Ax','Ay','Az'])
     EGI_vel = importEGIData(['Time', 'Vx','Vy', 'Vz'])
@@ -134,13 +133,9 @@ def generateReferenceTrajectory(plotcheck):
     
     referenceTrajectory.to_pickle("./referenceTrajectory.pkl")
     
-    if plotcheck == True:
-        fig = px.scatter(x = referenceTrajectory['Time'],y = referenceTrajectory['Accel_x'])
-        fig.show()    
-
     return 
 
-def generateTrackRPV(plotcheck, referenceTrajectory):
+def generateTrackRPV(referenceTrajectory):
         
     trackRPV = pd.DataFrame()
     
@@ -161,14 +156,7 @@ def generateTrackRPV(plotcheck, referenceTrajectory):
     
     trackRPV = trackRPV[:-1]
     
-    #%% Plotcheck
-
-    # Plot 
-    if plotcheck == True:
-        fig = px.scatter(x = trackRPV['Time'],y = trackRPV['Interupters_DwnTrk_dist'])
-        fig.add_trace(go.Scatter(x = referenceTrajectory['Time'],y = referenceTrajectory['IntDist_x']))
-        fig.show()   
-        
+    #%% Save track RPV to pickle file
     trackRPV.to_pickle("./trackRPV.pkl")
         
     return
