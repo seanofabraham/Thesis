@@ -12,6 +12,8 @@ import tkinter as tk
 from tkinter import filedialog
 import plotly.express as px
 import numpy as np
+from scipy import integrate
+import plotly.graph_objects as go
 
 
 def importEGIData(Headers):
@@ -58,13 +60,120 @@ def lpf(x, omega_c, T):
     beta = T*omega_c/(2+T*omega_c)
     for k in range(1, N):
         y[k] = alpha*y[k-1] + beta*(x[k]+x[k-1])
-    return y
+        
+    return y 
 
-def aveDeriv(x,y,dt):
+
+def generateReferenceTrajectory(plotcheck):
+    
+    EGI_accel = importEGIData(['Time', 'Ax','Ay','Az'])
+    EGI_vel = importEGIData(['Time', 'Vx','Vy', 'Vz'])
+
+    # EGI_accel =  pd.read_csv('EGI_accel.csv',names = ['Time', 'Ax','Ay','Az'])
+    # EGI_vel = pd.read_csv('EGI_vel.csv',names = ['Time', 'Vx','Vy', 'Vz'])
+
+    EGI_accel_vel = EGI_accel.join(EGI_vel[['Vx','Vy','Vz']])
+
+    #%% Truth Gen Step 2 - Trim data to focus on actual sled run.
+    
+    print("Trimming data to start/stop time determined visually...")
+    startTime = 399600
+    stopTime = 399700
+
+    EGI_accel_vel_trim = EGI_accel_vel[(EGI_accel_vel['Time'] > startTime) & (EGI_accel_vel['Time'] < stopTime) ] # trim accelerometer output
+
+    # Creating new time array for data
+    Tdur = EGI_accel_vel_trim['Time'].max() - EGI_accel_vel_trim['Time'].min()
+    Tlen = len(EGI_accel_vel_trim['Time'])
+
+    NewTimeSeries = np.linspace(0, Tdur, Tlen)
+
+    EGI_accel_vel_trim.loc[:,'New Time'] = NewTimeSeries
+                                                                         
+    #%% Truth Gen Step 3 - Smooth Acceleration in X-axis
+    # EGI_accel_smoothed_array = savgol_filter(EGI_accel_vel_trim['Ax'],25,3)
+
+    EGI_accel_presmoothed = EGI_accel_vel_trim[['Ax']]
+
+    EGI_accel_smoothed_array = lpf(EGI_accel_vel_trim[['Ax']].to_numpy(),50,Tdur/Tlen)
+
+    EGI_accel_vel_trim['Ax'] = EGI_accel_presmoothed
+
+    # EGI_accel_vel_trim['Ax_smooth'] = pd.Series(EGI_accel_smoothed_array)
+
+    #%% Truth Gen Step 4 - Create a DataFrame to house all truth data
+
+    referenceTrajectory = pd.DataFrame()
+    
+    print(EGI_accel_smoothed_array)
+    
+    referenceTrajectory['Time'] = EGI_accel_vel_trim['New Time']
+    referenceTrajectory['Accel_x'] = EGI_accel_smoothed_array
+    referenceTrajectory['EGIVel_x'] = EGI_accel_vel_trim['Vx']
+
+    # Create New Time Series
+    referenceTrajectory['Time'] = np.linspace(0, Tdur, Tlen)
+
+    # Change initial acceleration in X to zero until launch. Determined visually
+    print("Setting initial acceleration to 0 until launch...")
+    referenceTrajectory['Accel_x'][:1145] = 0
+
+    # Change final acceleration after stop to zero. Determined visually
+    print("Setting final acceleration at 0...")
+    referenceTrajectory['Accel_x'][4992:] = 0
     
     
+    #%% Truth Gen Step 5 -  Integrate truth acceleration to get velocity and distance
+    referenceTrajectory['IntVel_x'] = integrate.cumulative_trapezoid(y = referenceTrajectory['Accel_x'],x = referenceTrajectory['Time'],initial = 0) 
+    referenceTrajectory['IntDist_x'] = integrate.cumulative_trapezoid(y = referenceTrajectory['IntVel_x'],x = referenceTrajectory['Time'],initial = 0) 
+
+    # Integrate EGI velocity to compare to double integrated acceleration
+    referenceTrajectory['EGIDist_x'] = integrate.cumulative_trapezoid(y = referenceTrajectory['EGIVel_x'],x = referenceTrajectory['Time'],initial = 0) 
     
-    return [xp,yp]
+    #%% Save trajectory to Pickle File
+    
+    referenceTrajectory.to_pickle("./referenceTrajectory.pkl")
+    
+    if plotcheck == True:
+        fig = px.scatter(x = referenceTrajectory['Time'],y = referenceTrajectory['Accel_x'])
+        fig.show()    
+
+    return 
+
+def generateTrackRPV(plotcheck, referenceTrajectory):
+        
+    trackRPV = pd.DataFrame()
+    
+    # Length_time = np.linspace(trackTruth['Time'][:0] - trackTruth['Time'][:-1]
+    
+    # totDist = 100 + trackTruth_uniq['IntDist_x'][-1:] - trackTruth_uniq['IntDist_x'][:1]
+    
+    Interupter_delta = 4.5 * 0.3048 # ft converted to meters
+    TrackLength = 10000   # Meters
+    
+    trackRPV['Interupters_DwnTrk_dist'] = np.arange(0, TrackLength, Interupter_delta)
+    
+    trackRPV['Time'] = np.interp(trackRPV['Interupters_DwnTrk_dist'],referenceTrajectory['IntDist_x'],referenceTrajectory['Time'])
+    
+    trackRPV = trackRPV[trackRPV['Interupters_DwnTrk_dist'] <= referenceTrajectory['IntDist_x'].max()]
+    
+    trackRPV = trackRPV.drop_duplicates(subset=['Time'])
+    
+    trackRPV = trackRPV[:-1]
+    
+    #%% Plotcheck
+
+    # Plot 
+    if plotcheck == True:
+        fig = px.scatter(x = trackRPV['Time'],y = trackRPV['Interupters_DwnTrk_dist'])
+        fig.add_trace(go.Scatter(x = referenceTrajectory['Time'],y = referenceTrajectory['IntDist_x']))
+        fig.show()   
+        
+    trackRPV.to_pickle("./trackRPV.pkl")
+        
+    return
+
+
     
     
     
