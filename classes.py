@@ -9,24 +9,36 @@ class Accelerometer:
     
     def __init__(self):  # Default accelerometer characteristics
      
-        self.K_1 = 1                          # Scale Factor
-        self.K_0 = 0                          # Bias
+        self.g = 9.791807                     # Definition of g
+        
+        self.AccelModelCoef = {'K_1': 1,                         # Scale Factor (g/g) NEEDS UPDATED
+                               'K_0': 0,                          # Bias (g)
+                               'K_2': 60.14440651  * 10**-6,      # is second-order coefficient (g/g^2)
+                               'K_3': 0.0151975    * 10**-6,      # is third-order coefficient  (g/g^3)
+                               'K_4': 0.00578331   * 10**-6,      # is fourth-order coefficient (g/g^4)
+                               'K_5': 0.002277013  * 10**-6      # is fifth-order coefficient  (g/g^5)
+                               }
+        
+        # self.K_1 = 1                          
+        # self.K_0 = 0                          
+        # self.K_2 = 60.14440651  * 10**-6      # is second-order coefficient (g/g^2)
+        # self.K_3 = 0.0151975    * 10**-6      # is third-order coefficient  (g/g^3)
+        # self.K_4 = 0.00578331   * 10**-6      # is fourth-order coefficient (g/g^4)
+        # self.K_5 = 0.002277013  * 10**-6      # is fifth-order coefficient  (g/g^5)
+        
+        ## NEED TO BE UPDATED WITH NEW COEFFICIENTS
         # self.K_0_asym = 0                   # Bias Asymmetry 
         # self.K_1_asym = 0                   # Scale Factor Asymmetry
         # self.K_oq = 0                       # Odd Quadratic Coefficient
-        self.K_2 = 60.14440651  * 10**-6          # is second-order coefficient
-        self.K_3 = 0.0151975    * 10**-6         # is third-order coefficient
-        self.K_4 = 0.00578331   * 10**-6         # is fourth-order coefficient
-        self.K_5 = 0.002277013  * 10**-6         # is fifth-order coefficient
         # self.omeg_o = 0                    # is misalignmet of the IA with respect to the OA
         # self.omeg_p = 0                    # is misalignmen of the IA with respect to the PA
-        self.K_ip = 0                        # is crosscoupling coefficient 
-        self.K_io = 0                        # is crosscoupling coefficient
-        self.K_po = 0                        # is crosscoupling coefficient
-        self.K_pp = 1.32E-4 * 10**-6         # is cross-axis nonlinearity coefficients
-        self.K_ppp = 2.10E-7 * 10**-6
-        self.K_pppp = 2.3E-10 * 10**-6
-        self.K_oo = 0                        # is cros-axis nonlinearity coefficients
+        # self.K_ip = 0                      # is crosscoupling coefficient 
+        # self.K_io = 0                      # is crosscoupling coefficient
+        # self.K_po = 0                      # is crosscoupling coefficient
+        # self.K_pp = 1.32E-4 * 10**-6       # is cross-axis nonlinearity coefficients
+        # self.K_ppp = 2.10E-7 * 10**-6
+        # self.K_pppp = 2.3E-10 * 10**-6
+        # self.K_oo = 0                      # is cros-axis nonlinearity coefficients
         # self.K_spin = 0                    # is spin correction coefficient, equal to 
         # self.K_ang_accel = 0               # is angular acceleration coefficient
         
@@ -38,9 +50,17 @@ class Accelerometer:
         Starting with one dimensional error model. Outputs acceleration given
         true input acceleration.
         """
-        accel_model = [self.K_0, self.K_1 * (a_i), self.K_2 * (a_i**2), self.K_3 * (a_i**3), self.K_4 * (a_i**4), self.K_5 * (a_i**5)] 
+        #Convert acceleration into g
+        g_i = a_i / self.g
         
-        a_x_Sim = sum(accel_model[:n+1])
+        accel_model = [self.AccelModelCoef['K_0'], 
+                       self.AccelModelCoef['K_1'] * (g_i), 
+                       self.AccelModelCoef['K_2'] * (g_i**2), 
+                       self.AccelModelCoef['K_3'] * (g_i**3), 
+                       self.AccelModelCoef['K_4'] * (g_i**4), 
+                       self.AccelModelCoef['K_5'] * (g_i**5)] 
+        
+        a_x_Sim = self.g * sum(accel_model[:n+1])
         
              # self.K_0 + self.K_1 * (a_i) + self.K_2 * (a_i**2) + self.K_3 * (a_i**3) + self.K_4 * (a_i**4) + self.K_5 * (a_i**5) 
              # self.omeg_o * a_p +
