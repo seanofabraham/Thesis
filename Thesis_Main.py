@@ -17,74 +17,28 @@ import numpy as np
 from scipy import integrate
 import plotly.express as px
 
-#%% Generate New Truth
-generateNewTruth = False
+#%% Generate or import trajectory
+"""
+Generates or creates reference trajectory from EGI data. 
+"""
+
+generateNewTrajectory = False
+plotcheck = False
 
 if generateNewTruth == True:      
-    generateTrackTruth()
+    generateReferenceTrajectory(plotcheck)
 
-#%% Import Reference Trajectory
+# Import Reference Trajectory
 
 referenceTrajectory = pd.read_pickle("./referenceTrajectory.pkl")
 
-#%% Plot Reference Trajectory
+# Generate track reference position vectory
 
-plotcheck = True
-# Plot 
-if plotcheck == True:
-    fig = px.scatter(x = referenceTrajectory['Time'],y = referenceTrajectory['Accel_x'])
-    fig.show()                    
-
-# # Get rid of duplicate times
-# trackTruth_uniq= trackTruth.drop_duplicates(subset=['Time'])
-
-# plotcheck = True 
-# # Plot 
-# if plotcheck == True:
-#     fig = px.scatter(x = trackTruth_uniq['Time'],y = trackTruth_uniq['Accel_x'])
-#     fig.show()                   
-
-#%% Truth Gen Step 5 -  Integrate truth acceleration to get velocity and distance
-trackTruth['IntVel_x'] = integrate.cumulative_trapezoid(y = trackTruth['Accel_x'],x = trackTruth['Time'],initial = 0) 
-trackTruth['IntDist_x'] = integrate.cumulative_trapezoid(y = trackTruth['IntVel_x'],x = trackTruth['Time'],initial = 0) 
-
-# Integrate EGI velocity to compare to double integrated acceleration
-trackTruth['EGIDist_x'] = integrate.cumulative_trapezoid(y = trackTruth['EGIVel_x'],x = trackTruth['Time'],initial = 0) 
-
-#%% Simulate Track interupters
-"""
-Track Gen - Script used to simulate track position reference data.
-
-"""
-
-trackRefVec = pd.DataFrame()
-
-# Length_time = np.linspace(trackTruth['Time'][:0] - trackTruth['Time'][:-1]
-
-# totDist = 100 + trackTruth_uniq['IntDist_x'][-1:] - trackTruth_uniq['IntDist_x'][:1]
-
-Interupter_delta = 4.5 * 0.3048 # ft converted to meters
-TrackLength = 10000   # Meters
-
-trackRefVec['Interupters_DwnTrk_dist'] = np.arange(0, TrackLength, Interupter_delta)
-
-trackRefVec['Time'] = np.interp(trackRefVec['Interupters_DwnTrk_dist'],trackTruth['IntDist_x'],trackTruth['Time'])
-
-trackRefVec = trackRefVec[trackRefVec['Interupters_DwnTrk_dist'] <= trackTruth['IntDist_x'].max()]
-
-trackRefVec = trackRefVec.drop_duplicates(subset=['Time'])
-
-trackRefVec = trackRefVec[:-1]
-
-#%% Plotcheck
-
-plotcheck = False
-# Plot 
-if plotcheck == True:
-    fig = px.scatter(x = trackRefVec['Time'],y = trackRefVec['Interupters_DwnTrk_dist'])
-    fig.add_trace(go.Scatter(x = trackTruth['Time'],y = trackTruth['IntDist_x']))
-    fig.show()     
-
+if generateNewTruth == True:    
+    generateRPV(plotcheck, referenceTrajectory)
+    
+trackRPV = pd.read_pickle("./trackRPV.pkl")    
+    
 #%% ACCEL SIM Step 1 - Simulate a Acceleromter with Bias using Accelerometer class
 """
 ACCEL SIM - Scripts used to generate simulated accelerometer output based on truth input
@@ -93,17 +47,13 @@ Using smoothed acceleration truth data to simulate
 """
 N_model = 2
 
-
 AccelOne = Accelerometer()
 # Create data frame to house data
 sensorSim = pd.DataFrame()
-sensorSim['Time'] = trackTruth['Time']
-
-# Set Error Coefficient values (g)
-# AccelOne.K_0 = .01 
+sensorSim['Time'] = referenceTrajectory['Time']
 
 # Change to array for us in simulation.
-A_i_true = trackTruth['Accel_x'].to_numpy()  
+A_i_true = referenceTrajectory['Accel_x'].to_numpy()  
 
 # Simulate
 A_x_sim = AccelOne.simulate(A_i_true,N_model)  
@@ -124,11 +74,11 @@ Dist_Error['Time'] = trackRefVec['Time']
 
 # Interpolate Sensor Sim to Track
 
-trackRefVec['SensorInterpDist'] = np.interp(trackRefVec['Time'],sensorSim['Time'],sensorSim['Dx'])
+trackRefVec['SensorInterpDist'] = np.interp(trackRPV['Time'],sensorSim['Time'],sensorSim['Dx'])
 
-px.scatter(trackRefVec, x = 'Time', y = ['SensorInterpDist','Interupters_DwnTrk_dist'])
+px.scatter(trackRPV, x = 'Time', y = ['SensorInterpDist','Interupters_DwnTrk_dist'])
 
-Dist_Error['De_x'] = trackRefVec['Interupters_DwnTrk_dist'] - trackRefVec['SensorInterpDist']
+Dist_Error['De_x'] = trackRPV['Interupters_DwnTrk_dist'] - trackRPV['SensorInterpDist']
 
 # Compute Velocity Error
 Ve_x = np.diff(Dist_Error['De_x'])/np.diff(Dist_Error['Time'])
