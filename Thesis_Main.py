@@ -16,14 +16,24 @@ from classes import *
 import numpy as np
 from scipy import integrate
 import plotly.express as px
+import plotly.graph_objects as go
+
+
+#%% Initial Configuration
+generateNewTrajectory = False
+plotcheck = False
+
+changeDefaultCoef = True
+CoeffDict = {'K_0': .05}
+
+N_model = 2
+
 
 #%% Generate or import trajectory
 """
 Generates or creates reference trajectory from EGI data. 
 """
 
-generateNewTrajectory = False
-plotcheck = True
 
 if generateNewTrajectory == True:      
     generateReferenceTrajectory()
@@ -39,6 +49,7 @@ if generateNewTrajectory == True:
     
 trackRPV = pd.read_pickle("./trackRPV.pkl") 
 
+#%% Plotcheck 
 if plotcheck == True:
     figRefTraj = px.scatter(x = referenceTrajectory['Time'],y = referenceTrajectory['Accel_x'])
     figRefTraj.show()   
@@ -53,11 +64,13 @@ ACCEL SIM - Scripts used to generate simulated accelerometer output based on tru
 
 Using smoothed acceleration truth data to simulate
 """
-N_model = 1
 
 AccelOne = Accelerometer()
 
+if changeDefaultCoef == True:
+        AccelOne.AccelModelCoef.update(CoeffDict)
 
+print(AccelOne.K_0)
 
 # Create data frame to house data
 sensorSim = pd.DataFrame()
@@ -155,7 +168,6 @@ for n in range(N_model+2):
     print(print_List[n], coeff_list[n])
 
 #%%  Plot the residual
-
 
 V_error_model_terms = [coeff_list[0], coeff_list[1] * Ve_t,  coeff_list[2]*Vx, coeff_list[3]*intAx_2, coeff_list[4]*intAx_3,  coeff_list[5]*intAx_4,  Est_K_5*intAx_5]
 
