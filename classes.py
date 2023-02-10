@@ -10,14 +10,14 @@ class Accelerometer:
     def __init__(self):  # Default accelerometer characteristics
      
         self.K_1 = 1                          # Scale Factor
-        self.K_0 = 0                       # Bias
+        self.K_0 = 0                          # Bias
         # self.K_0_asym = 0                   # Bias Asymmetry 
         # self.K_1_asym = 0                   # Scale Factor Asymmetry
         # self.K_oq = 0                       # Odd Quadratic Coefficient
-        self.K_2 = 2.42E-2  * 10**-6         # is second-order coefficient
-        self.K_3 = 4.08E-3  * 10**-6         # is third-order coefficient
-        self.K_4 = 2.56E-9  #* 10**-6         # is fourth-order coefficient
-        self.K_5 = 3.01E-9  #* 10**-6         # is fifth-order coefficient
+        self.K_2 = 60.14440651  * 10**-6          # is second-order coefficient
+        self.K_3 = 0.0151975    * 10**-6         # is third-order coefficient
+        self.K_4 = 0.00578331   * 10**-6         # is fourth-order coefficient
+        self.K_5 = 0.002277013  * 10**-6         # is fifth-order coefficient
         # self.omeg_o = 0                    # is misalignmet of the IA with respect to the OA
         # self.omeg_p = 0                    # is misalignmen of the IA with respect to the PA
         self.K_ip = 0                        # is crosscoupling coefficient 
