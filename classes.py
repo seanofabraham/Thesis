@@ -43,7 +43,7 @@ class Accelerometer:
         # self.K_ang_accel = 0               # is angular acceleration coefficient
         
 
-    def simulate(self,a_i,n):
+    def simulate(self,a_i,n_start_idx, n_stop_idx):
                  
                  # a_p,a_o):
         """
@@ -60,7 +60,7 @@ class Accelerometer:
                        self.AccelModelCoef['K_4'] * (g_i**4), 
                        self.AccelModelCoef['K_5'] * (g_i**5)] 
         
-        a_x_Sim = self.g * sum(accel_model[:n+1])
+        a_x_Sim = self.g * sum(accel_model[n_start_idx:n_stop_idx])
         
              # self.K_0 + self.K_1 * (a_i) + self.K_2 * (a_i**2) + self.K_3 * (a_i**3) + self.K_4 * (a_i**4) + self.K_5 * (a_i**5) 
              # self.omeg_o * a_p +

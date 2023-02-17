@@ -12,7 +12,7 @@ This is the main running code for the thesis. It calls the functions needed.
 
 from Thesis_Utils import *
 # from scipy.signal import savgol_filter
-from classes import *
+from classes_x import *
 import numpy as np
 from scipy import integrate
 import plotly.express as px
@@ -26,8 +26,13 @@ plotcheck = False
 changeDefaultCoef = True
 CoeffDict = {'K_0': .05}
 
-N_model = 2
+N_model_start = 0  #  0 = K_0, 1 = K_1, 2 = K_2, etc. 
+N_model_end = 1    #  0 = K_0, 1 = K_1, 2 = K_2, etc. 
 
+
+# Fix indexing numbers
+N_model_start_idx = N_model_start
+N_model_end_idx = N_model_end + 1
 
 #%% Generate or import trajectory
 """
@@ -70,7 +75,7 @@ AccelOne = Accelerometer()
 if changeDefaultCoef == True:
         AccelOne.AccelModelCoef.update(CoeffDict)
 
-print(AccelOne.K_0)
+print(AccelOne.AccelModelCoef['K_0'])
 
 # Create data frame to house data
 sensorSim = pd.DataFrame()
@@ -80,7 +85,7 @@ sensorSim['Time'] = referenceTrajectory['Time']
 A_i_true = referenceTrajectory['Accel_x'].to_numpy()  
 
 # Simulate
-A_x_sim = AccelOne.simulate(A_i_true,N_model)  
+A_x_sim = AccelOne.simulate(A_i_true, N_model_start_idx, N_model_end_idx)  
 
 #Store data in data frame. 
 sensorSim['Ax'] = A_x_sim
@@ -139,33 +144,44 @@ intAx_4 = np.interp(Ve_t,sensorSim['Time'],sensorSim['intAx^4'])
 intAx_5 = np.interp(Ve_t,sensorSim['Time'],sensorSim['intAx^5']) 
 
 # Initialize Coefficients
-Est_V_0 = 0
-Est_K_0 = 0
-Est_K_1 = 0
-Est_K_2 = 0
-Est_K_3 = 0
-Est_K_4 = 0
-Est_K_5 = 0
-coeff_list = [Est_V_0, Est_K_0, Est_K_1, Est_K_2, Est_K_3, Est_K_4, Est_K_5]
+# Est_V_0 = 0
+# Est_K_0 = 0
+# Est_K_1 = 0
+# Est_K_2 = 0
+# Est_K_3 = 0
+# Est_K_4 = 0
+# Est_K_5 = 0
+coeff_dict = {'Est_V_0':0, 'Est_K_0':0, 'Est_K_1':0, 'Est_K_2':0, 'Est_K_3':0, 'Est_K_4':0, 'Est_K_5':0}
 
 # Create Complete A Matrix
-complete_A = [np.ones(len(Ve_t)), Ve_t, Vx, intAx_2, intAx_3, intAx_4, intAx_5]
-trimmed_A = complete_A[:N_model+2]
-trimmed_A.reverse()
+complete_A = np.array([np.ones(len(Ve_t)), Ve_t, Vx, intAx_2, intAx_3, intAx_4, intAx_5])
+complete_A = complete_A.T
+
+trimmed_A_filt = np.zeros(complete_A.shape[1], dtype = bool)
+trimmed_A_filt[0] = 1
+
+trimmed_A_filt[N_model_start_idx+1:N_model_end_idx+1] = 1
+
+trimmed_A = complete_A[:,trimmed_A_filt]
+
+trimmed_A = np.fliplr(trimmed_A)
 
 # Only use columns of A needed for model
 A = np.vstack(trimmed_A).T
 
 # Linear Regression
-coeff_list[:N_model+2] = np.linalg.lstsq(A, Ve_x, rcond=None)[0]
+coeff_list = none_list = [None for _ in range(trimmed_A.shape[1]+1)]
+coeff_list = np.linalg.lstsq(A, Ve_x, rcond=None)[0]
+
 
 #%% Display estimated error coefficient values
 
-print_List = ["V_0: ","K_0: ","K_1: ","K_2: ","K_3: ","K_4: ","K_5: " ]
+print_List = ["Est_V_0: ","Est_K_0: ","Est_K_1: ","Est_K_2: ","Est_K_3: ","Est_K_4: ","Est_K_5: "]
 
 print('\nEstimated Error Coefficients')
-for n in range(N_model+2):
-    print(print_List[n], coeff_list[n])
+print('Est_V_0: ', coeff_dict['Est_V_0'])
+for coef in print_List[N_model_start:N_model_end]:
+    print(coef, coeff_dict[coef])
 
 #%%  Plot the residual
 
