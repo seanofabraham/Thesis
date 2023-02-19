@@ -21,13 +21,13 @@ import pandas as pd
 
 #%% Initial Configuration
 generateNewTrajectory = False
-plotcheck = False
+plotcheck = True
 
 changeDefaultCoef = True
-CoeffDict = {'K_0': .05}
+CoeffDict = {'K_0': 5E-5}
 
-N_model_start = 0  #  0 = K_0, 1 = K_1, 2 = K_2, etc. 
-N_model_end = 1    #  0 = K_0, 1 = K_1, 2 = K_2, etc. 
+N_model_start = 0  #  0 = K_0 (Bias), 1 = K_1 (Scale Factor), 2 = K_2, etc. 
+N_model_end = 2    #  0 = K_0 (Bias), 1 = K_1 (Scale Factor), 2 = K_2, etc. 
 
 
 # Fix indexing numbers
@@ -38,7 +38,6 @@ N_model_end_idx = N_model_end + 1
 """
 Generates or creates reference trajectory from EGI data. 
 """
-
 
 if generateNewTrajectory == True:      
     generateReferenceTrajectory()
@@ -143,10 +142,7 @@ Figure_VelErrorVsAccel.plotTwoAxis(Error[['VelErr_x']], df_x = Error[['Time']])
 Figure_VelErrorVsAccel.addLine(Error[['Ax']], df_x = Error[['Time']],secondary_y=True)
 Figure_VelErrorVsAccel.show()
 
-
-
 #%% - Regression Analysis
-
 """
 Regression Analysis - Scripts used to compute error model
 """
@@ -171,14 +167,6 @@ intAx_3 = np.interp(Ve_t,sensorSim['Time'],sensorSim['intAx^3'])
 intAx_4 = np.interp(Ve_t,sensorSim['Time'],sensorSim['intAx^4']) 
 intAx_5 = np.interp(Ve_t,sensorSim['Time'],sensorSim['intAx^5']) 
 
-# Initialize Coefficients
-# Est_V_0 = 0
-# Est_K_0 = 0
-# Est_K_1 = 0
-# Est_K_2 = 0
-# Est_K_3 = 0
-# Est_K_4 = 0
-# Est_K_5 = 0
 coeff_dict = {'Est_V_0': 0, 'Est_K_0': 0, 'Est_K_1': 0, 'Est_K_2': 0, 'Est_K_3': 0, 'Est_K_4': 0, 'Est_K_5': 0}
 
 # Create Complete A Matrix
@@ -201,7 +189,7 @@ A = np.vstack(trimmed_A).T
 coeff_list = tuple(None for _ in range(trimmed_A.shape[1]))
 coeff_list = np.linalg.lstsq(trimmed_A, Ve_x, rcond=None)[0]
 
-
+## UPDATE COEFFICIENT VALUES TO RIGHT UNITS.
 
 #%% Display estimated error coefficient values
 
