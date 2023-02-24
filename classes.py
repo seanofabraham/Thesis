@@ -60,6 +60,9 @@ class Accelerometer:
                        self.AccelModelCoef['K_4'] * (g_i**4), 
                        self.AccelModelCoef['K_5'] * (g_i**5)] 
         
+        print('Start Index: ' + n_start_idx)
+        print('End Index: ' + n_stop_idx)
+        
         a_x_Sim = self.g * sum(accel_model[n_start_idx:n_stop_idx])
         
              # self.K_0 + self.K_1 * (a_i) + self.K_2 * (a_i**2) + self.K_3 * (a_i**3) + self.K_4 * (a_i**4) + self.K_5 * (a_i**5) 

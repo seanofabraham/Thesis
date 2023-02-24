@@ -12,7 +12,7 @@ class Accelerometer:
         self.g = 9.791807                     # Definition of g
         
         self.AccelModelCoef = {'K_1': 1,                         # Scale Factor (g/g) NEEDS UPDATED
-                               'K_0': 0,                          # Bias (g)
+                               'K_0': 5            * 10**-6,                          # Bias (g)
                                'K_2': 60.14440651  * 10**-6,      # is second-order coefficient (g/g^2)
                                'K_3': 0.0151975    * 10**-6,      # is third-order coefficient  (g/g^3)
                                'K_4': 0.00578331   * 10**-6,      # is fourth-order coefficient (g/g^4)
@@ -53,12 +53,14 @@ class Accelerometer:
         #Convert acceleration into g
         g_i = a_i / self.g
         
-        accel_model = [self.AccelModelCoef['K_0'], 
-                       self.AccelModelCoef['K_1'] * (g_i), 
+        accel_model = [self.AccelModelCoef['K_1'] * (g_i),
+                       self.AccelModelCoef['K_0'] * np.ones(len(g_i)),  
                        self.AccelModelCoef['K_2'] * (g_i**2), 
                        self.AccelModelCoef['K_3'] * (g_i**3), 
                        self.AccelModelCoef['K_4'] * (g_i**4), 
-                       self.AccelModelCoef['K_5'] * (g_i**5)] 
+                       self.AccelModelCoef['K_5'] * (g_i**5)]
+        
+        # print(accel_model[n_start_idx:n_stop_idx])
         
         a_x_Sim = self.g * sum(accel_model[n_start_idx:n_stop_idx])
         
