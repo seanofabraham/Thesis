@@ -23,13 +23,13 @@ import pandas as pd
 generateNewTrajectory = False
 plotcheck = False
 
-changeDefaultCoef =True
+changeDefaultCoef = False
 CoeffDict = {'K_0': .05}
 
-N_model_start = 0  #  0 =  K_0 (Bias), 1 = K_1 (Scale Factor), 2 = K_2, etc. 
-N_model_end = 1    #  0 = K_0 (Bias), 1 = K_1 (Scale Factor), 2 = K_2, etc. 
+N_model_start = 5  #  0 =  K_1 (Scale Factor), 1 = K_0 (Bias), 2 = K_2, etc. 
+N_model_end = 5   #  0 = K_1 (Scale Factor), 1 = K_0 (Bias), 2 = K_2, etc. 
 
-
+g = 9.791807  
 # Fix indexing numbers
 N_model_start_idx = N_model_start
 N_model_end_idx = N_model_end + 1
@@ -148,6 +148,8 @@ coeff_dict = {'Est_V_0': 0, 'Est_K_1': 0, 'Est_K_0': 0, 'Est_K_2': 0, 'Est_K_3':
 complete_A = np.array([np.ones(len(Ve_t)), Vx, Ve_t, intAx_2, intAx_3, intAx_4, intAx_5])
 complete_A = complete_A.T
 
+complete_A_DF = pd.DataFrame(np.fliplr(complete_A), columns=['IntAx_5', 'IntAx_4', 'IntAx_3', 'IntAx_2', 'Ve_t', 'Vx', 'Ones'])
+
 trimmed_A_filt = np.zeros(complete_A.shape[1], dtype = bool)
 trimmed_A_filt[0] = 1
 
@@ -155,14 +157,12 @@ trimmed_A_filt[N_model_start_idx+1:N_model_end_idx+1] = 1
 
 trimmed_A = complete_A[:,trimmed_A_filt]
 
-trimmed_A = np.fliplr(trimmed_A)
-
-# Only use columns of A needed for model
-A = np.vstack(trimmed_A).T
+# trimmed_A = np.fliplr(trimmed_A)
 
 # Linear Regression
 coeff_list = tuple(None for _ in range(trimmed_A.shape[1]))
-coeff_list = np.linalg.lstsq(trimmed_A, Ve_x, rcond=None)[0]
+
+coeff_list = np.linalg.lstsq(trimmed_A*g, Ve_x, rcond=None)[0]
 
 ## UPDATE COEFFICIENT VALUES TO RIGHT UNITS.
 
@@ -177,24 +177,33 @@ for coef in print_List[trimmed_A_filt]:
     coeff_dict[coef] = coeff_list[n]
     n += 1 
 
-coeff_dict['Est_K_1'] = coeff_dict['Est_K_1'] + 1
+# coeff_dict['Est_K_1'] = coeff_dict['Est_K_1'] + 1
 
 for coeff, value in coeff_dict.items():
     print(f"{coeff}: {value}")
-
+    
+print('\nAcclerometer Simulation Error Coefficients')    
+i = 0
+for coeff, value in AccelOne.AccelModelCoef.items():
+    print(f"{coeff}: {value}")
+    if i == N_model_end:
+        break
+    else:
+        i += 1
+        
 #%%  Plot the residual
 
 V_error_model_terms = [coeff_dict['Est_V_0'], 
-                       (coeff_dict['Est_K_1']-1)*Vx,  
+                       coeff_dict['Est_K_1']*Vx,  
                        coeff_dict['Est_K_0']*Ve_t, 
                        coeff_dict['Est_K_2']*intAx_2, 
                        coeff_dict['Est_K_3']*intAx_3,  
                        coeff_dict['Est_K_4']*intAx_4,  
                        coeff_dict['Est_K_5']*intAx_5]
 
-V_error_model = sum(V_error_model_terms) 
+Error['V_error_model'] = sum(V_error_model_terms)*g 
 
-Error['Ve_x_Resid'] = Ve_x - V_error_model 
+Error['Ve_x_Resid'] = Error['VelErr_x'] - Error['V_error_model'] 
 
 #%% Plots scripts 
 """
@@ -276,7 +285,7 @@ if Plots == True:
     
     Figure6.show()
     
-    #%% Plot Residuals
+    #%% Plot Error
     Figure7 = PlotlyPlot()
     
     Figure7.setTitle('Velocity Residuals')
@@ -314,12 +323,12 @@ if Plots == True:
     Figure_VelErrorVsAccel.addLine(Error[['Ax']], df_x = Error[['Time']],secondary_y=True)
     Figure_VelErrorVsAccel.show()
 
-#%% Plots Acceleration and Velocity
+#%% Plots Residuals Acceleration and Velocity
     
     Figure = PlotlyPlot()
     
     Figure.setTitle('Residuals')
-    Figure.setYaxisTitle('Velocity Error (m/s)))')
+    Figure.setYaxisTitle('Velocity Error Residuals (m/s)))')
     Figure.setYaxis2Title('Velocity (m/s)')
     Figure.setXaxisTitle('GPS Time (s)')
     Figure.settwoAxisChoice([False, True])
@@ -330,7 +339,7 @@ if Plots == True:
     Figure_x = PlotlyPlot()
     
     Figure_x.setTitle('Residuals')
-    Figure_x.setYaxisTitle('Velocity Error (m/s)')
+    Figure_x.setYaxisTitle('Velocity Error Residuals (m/s)')
     Figure_x.setYaxis2Title('Acceleration (m/s/s)')
     Figure_x.setXaxisTitle('GPS Time (s)')
     Figure_x.settwoAxisChoice([False, True])
@@ -338,4 +347,14 @@ if Plots == True:
     Figure_x.addLine(Error[['Ax']], df_x = Error[['Time']],secondary_y=True)
     Figure_x.show()
         
-#%% plotSimple(residuals, x='Time', y = 'Ve_x')
+#%% Plot Velocity Error versus velocity error model
+    VelErrVsResid = PlotlyPlot()
+    
+    VelErrVsResid.setTitle('Velocity Error vs Estimated Error Model')
+    VelErrVsResid.setYaxisTitle('Velocity Error (m/s)')
+    VelErrVsResid.setXaxisTitle('GPS Time (s)')
+    VelErrVsResid.plotTwoAxis(Error[['VelErr_x']], df_x = Error[['Time']], mode = 'markers')
+    VelErrVsResid.addScatter(Error[['V_error_model']], df_x = Error[['Time']], secondary_y=False)
+    # VelErrVsResid.addScatter(Error[['A_Bias']], df_x = Error[['Time']], secondary_y=False)
+    VelErrVsResid.show()
+

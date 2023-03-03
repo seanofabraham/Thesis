@@ -11,7 +11,7 @@ class Accelerometer:
      
         self.g = 9.791807                     # Definition of g
         
-        self.AccelModelCoef = {'K_1': 1,                         # Scale Factor (g/g) NEEDS UPDATED
+        self.AccelModelCoef = {'K_1': 0,                         # Scale Factor (g/g) NEEDS UPDATED
                                'K_0': 5            * 10**-6,                          # Bias (g)
                                'K_2': 60.14440651  * 10**-6,      # is second-order coefficient (g/g^2)
                                'K_3': 0.0151975    * 10**-6,      # is third-order coefficient  (g/g^3)
@@ -62,7 +62,7 @@ class Accelerometer:
         
         # print(accel_model[n_start_idx:n_stop_idx])
         
-        a_x_Sim = self.g * sum(accel_model[n_start_idx:n_stop_idx])
+        a_x_Sim = self.g * sum(accel_model[n_start_idx:n_stop_idx]) + a_i
         
              # self.K_0 + self.K_1 * (a_i) + self.K_2 * (a_i**2) + self.K_3 * (a_i**3) + self.K_4 * (a_i**4) + self.K_5 * (a_i**5) 
              # self.omeg_o * a_p +
