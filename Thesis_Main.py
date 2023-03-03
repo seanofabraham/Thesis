@@ -65,10 +65,10 @@ if RPVType == 'Start':
 elif RPVType == 'StartEnd':
     trackRPV = pd.read_pickle("./trackRPV_0Vel_StartEnd.pkl") 
 elif RPVType == 'NoZeroVel':
-    trackRPV = pd.read_pickle("./trackRPV.pkl") 
+    trackRPV = pd.read_pickle("./trackRPV__noZeroVel.pkl") 
 else:
     print('No acceptable RPV type selected. Using RPV with no 0Vel areas...')
-    trackRPV = pd.read_pickle("./trackRPV.pkl") 
+    trackRPV = pd.read_pickle("./trackRPV_noZeroVel.pkl") 
 
 #%%
 
