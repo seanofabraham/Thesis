@@ -107,27 +107,33 @@ def generateReferenceTrajectory():
     print(EGI_accel_smoothed_array)
     
     referenceTrajectory['Time'] = EGI_accel_vel_trim['New Time']
-    referenceTrajectory['Accel_x'] = EGI_accel_smoothed_array
-    referenceTrajectory['EGIVel_x'] = EGI_accel_vel_trim['Vx']
+    referenceTrajectory['refAccel_x'] = EGI_accel_smoothed_array
+    referenceTrajectory['refEGIVel_x'] = EGI_accel_vel_trim['Vx']
 
     # Create New Time Series
     referenceTrajectory['Time'] = np.linspace(0, Tdur, Tlen)
 
     # Change initial acceleration in X to zero until launch. Determined visually
     print("Setting initial acceleration to 0 until launch...")
-    referenceTrajectory['Accel_x'][:1145] = 0
+    referenceTrajectory['refAccel_x'][:1145] = 0
 
     # Change final acceleration after stop to zero. Determined visually
     print("Setting final acceleration at 0...")
-    referenceTrajectory['Accel_x'][4992:] = 0
+    referenceTrajectory['refAccel_x'][4992:] = 0
     
     
     #%% Truth Gen Step 5 -  Integrate truth acceleration to get velocity and distance
-    referenceTrajectory['IntVel_x'] = integrate.cumulative_trapezoid(y = referenceTrajectory['Accel_x'],x = referenceTrajectory['Time'],initial = 0) 
-    referenceTrajectory['IntDist_x'] = integrate.cumulative_trapezoid(y = referenceTrajectory['IntVel_x'],x = referenceTrajectory['Time'],initial = 0) 
+    referenceTrajectory['refVel_x'] = integrate.cumulative_trapezoid(y = referenceTrajectory['refAccel_x'],x = referenceTrajectory['Time'],initial = 0) 
+    
+    # Change final Velocity after stop to zero. Determined visually
+    print("Setting final velocity at 0...")
+    referenceTrajectory['refVel_x'][4992:] = 0
+    
+    referenceTrajectory['refDist_x'] = integrate.cumulative_trapezoid(y = referenceTrajectory['refVel_x'],x = referenceTrajectory['Time'],initial = 0) 
+
 
     # Integrate EGI velocity to compare to double integrated acceleration
-    referenceTrajectory['EGIDist_x'] = integrate.cumulative_trapezoid(y = referenceTrajectory['EGIVel_x'],x = referenceTrajectory['Time'],initial = 0) 
+    referenceTrajectory['refEGIDist_x'] = integrate.cumulative_trapezoid(y = referenceTrajectory['refEGIVel_x'],x = referenceTrajectory['Time'],initial = 0) 
     
     #%% Save trajectory to Pickle File
     
@@ -146,11 +152,11 @@ def generateTrackRPV(referenceTrajectory):
     
     trackRPV['Interupters_DwnTrk_dist'] = np.arange(0, TrackLength, Interupter_delta)
     
-    trackRPV['Time'] = np.interp(trackRPV['Interupters_DwnTrk_dist'],referenceTrajectory['IntDist_x'],referenceTrajectory['Time'])
+    trackRPV['Time'] = np.interp(trackRPV['Interupters_DwnTrk_dist'],referenceTrajectory['refDist_x'],referenceTrajectory['Time'])
     
 
     
-    trackRPV = trackRPV[trackRPV['Interupters_DwnTrk_dist'] <= referenceTrajectory['IntDist_x'].max()]
+    trackRPV = trackRPV[trackRPV['Interupters_DwnTrk_dist'] <= referenceTrajectory['refDist_x'].max()]
     
     trackRPV = trackRPV.drop_duplicates(subset=['Time'])
     
