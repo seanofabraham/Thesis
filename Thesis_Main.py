@@ -23,6 +23,13 @@ import pandas as pd
 generateNewTrajectory = True
 plotcheck = False
 
+
+# NoZeroVel = No portions of zero velocity areas
+# Start = Zero velocity area at beginning
+# StartEnd = Zero velocity are at beginning and end
+
+RPVType = 'NoZeroVel'
+
 changeDefaultCoef = False
 CoeffDict = {'K_0': .05}
 
@@ -51,8 +58,17 @@ referenceTrajectory = pd.read_pickle("./referenceTrajectory.pkl")
 
 if generateNewTrajectory == True:    
     generateTrackRPV(referenceTrajectory)
-    
-trackRPV = pd.read_pickle("./trackRPV.pkl") 
+
+
+if RPVType == 'Start':
+    trackRPV = pd.read_pickle("./trackRPV_0Vel_Start.pkl")
+elif RPVType == 'StartEnd':
+    trackRPV = pd.read_pickle("./trackRPV_0Vel_StartEnd.pkl") 
+elif RPVType == 'NoZeroVel':
+    trackRPV = pd.read_pickle("./trackRPV.pkl") 
+else:
+    print('No acceptable RPV type selected. Using RPV with no 0Vel areas...')
+    trackRPV = pd.read_pickle("./trackRPV.pkl") 
 
 #%%
 

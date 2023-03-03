@@ -74,7 +74,7 @@ def generateReferenceTrajectory():
     EGI_accel_vel = EGI_accel.join(EGI_vel[['Vx','Vy','Vz']])
 
     #%% Truth Gen Step 2 - Trim data to focus on actual sled run.
-    
+    print('Developing Reference Trajectory')
     print("Trimming data to start/stop time determined visually...")
     startTime = 399600
     stopTime = 399700
@@ -103,9 +103,7 @@ def generateReferenceTrajectory():
     #%% Truth Gen Step 4 - Create a DataFrame to house all truth data
 
     referenceTrajectory = pd.DataFrame()
-    
-    print(EGI_accel_smoothed_array)
-    
+
     referenceTrajectory['Time'] = EGI_accel_vel_trim['New Time']
     referenceTrajectory['refAccel_x'] = EGI_accel_smoothed_array
     referenceTrajectory['refEGIVel_x'] = EGI_accel_vel_trim['Vx']
@@ -144,7 +142,8 @@ def generateReferenceTrajectory():
 #%% Generate Track RPV Function 
 
 def generateTrackRPV(referenceTrajectory):
-        
+    
+    print("\n Generating RPVs")
     trackRPV = pd.DataFrame()
     
     Interupter_delta = 4.5 * 0.3048 # ft converted to meters
@@ -155,7 +154,6 @@ def generateTrackRPV(referenceTrajectory):
     trackRPV['Time'] = np.interp(trackRPV['Interupters_DwnTrk_dist'],referenceTrajectory['refDist_x'],referenceTrajectory['Time'])
     
 
-    
     trackRPV = trackRPV[trackRPV['Interupters_DwnTrk_dist'] <= referenceTrajectory['refDist_x'].max()]
     
     trackRPV = trackRPV.drop_duplicates(subset=['Time'])
@@ -163,30 +161,35 @@ def generateTrackRPV(referenceTrajectory):
     trackRPV = trackRPV[:-1]
     
     
-    trackRPV_zeroVel= pd.DataFrame()
-    trackRPV_zeroVel_start = pd.DataFrame() 
- 
     
+    trackRPV_zeroVel_start = pd.DataFrame() 
     trackRPV_zeroVel_start['Time'] = referenceTrajectory['Time'][referenceTrajectory['Time']<trackRPV['Time'].min()]
     trackRPV_zeroVel_start['Interupters_DwnTrk_dist'] = 0
-    
+
     
     trackRPV_zeroVel_end = pd.DataFrame()
     
-    # trackRPV_zeroVel_end['Time'] = referenceTrajectory['Time'][referenceTrajectory['refVel_x']==0]
-    # trackRPV_zeroVel_end['Time'] = trackRPV_zeroVel_end['Time'][trackRPV_zeroVel_end['Time']>trackRPV['Time'].max()]
-    # trackRPV_zeroVel_end['Interupters_DwnTrk_dist'] = referenceTrajectory['refDist_x'].max()
-    # trackRPV_zeroVel_end = trackRPV_zeroVel_end.dropna()
+    trackRPV_zeroVel_end['Time'] = referenceTrajectory['Time'][referenceTrajectory['refVel_x']==0]
+    trackRPV_zeroVel_end['Time'] = trackRPV_zeroVel_end['Time'][trackRPV_zeroVel_end['Time']>trackRPV['Time'].max()]
+    trackRPV_zeroVel_end['Interupters_DwnTrk_dist'] = referenceTrajectory['refDist_x'].max()
+    trackRPV_zeroVel_end = trackRPV_zeroVel_end.dropna()
     
-    trackRPV_zeroVel = pd.concat((trackRPV_zeroVel_start,trackRPV_zeroVel_end), axis = 0)
+    trackRPV_zeroVel_StartEnd = pd.DataFrame()
+    trackRPV_zeroVel_StartMidEnd = pd.DataFrame()
+    trackRPV_zeroVel_StartMid = pd.DataFrame()
+
+    trackRPV_zeroVel_StartEnd = pd.concat((trackRPV_zeroVel_start,trackRPV_zeroVel_end), axis = 0)
     
-    trackRPV = pd.concat((trackRPV, trackRPV_zeroVel), axis = 0)
+    trackRPV_zeroVel_StartMidEnd = pd.concat((trackRPV, trackRPV_zeroVel_StartEnd), axis = 0)
+    trackRPV_zeroVel_StartMid = pd.concat((trackRPV, trackRPV_zeroVel_start), axis = 0)
     
     trackRPV = trackRPV.sort_values(by='Time').reset_index(drop=True)
     
     #%% Save track RPV to pickle file
-    trackRPV.to_pickle("./trackRPV.pkl")
-        
+    trackRPV.to_pickle(f"./trackRPV_noZeroVel.pkl")
+    trackRPV_zeroVel_StartMidEnd.to_pickle("./trackRPV_0Vel_StartEnd.pkl")
+    trackRPV_zeroVel_StartMid.to_pickle("./trackRPV_0Vel_Start.pkl")
+    
     return
 
 
