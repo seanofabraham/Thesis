@@ -185,27 +185,38 @@ coeff_list = np.linalg.lstsq(trimmed_A*g, Ve_x, rcond=None)[0]
 
 ## UPDATE COEFFICIENT VALUES TO RIGHT UNITS.
 
-#%% Display estimated error coefficient values
+#%% Save results to DataFrame
 
 print_List = np.array(list(coeff_dict.keys()))
 
-print('\nEstimated Error Coefficients')
 
+coefficientDF = pd.DataFrame.from_dict(AccelOne.AccelModelCoef, orient = 'index', columns= ['Accel Model'])
+coefficientDF = coefficientDF.append(pd.Series([0], index=coefficientDF.columns, name="V_0"))
+
+estimatedCoefficients = pd.DataFrame.from_dict(coeff_dict, orient = 'index', columns= ['Estimated Coefficients'])
+
+renameDict = {}
+for coeff in print_List:
+    renameDict[coeff] = coeff[4:]
+    
+estimatedCoefficients = estimatedCoefficients.rename(index = renameDict)   
+
+coefficientDF = pd.merge(coefficientDF,estimatedCoefficients,left_index=True, right_index=True)
+
+coefficientDF['Coefficient Estimate Error'] = coefficientDF['Accel Model'] + coefficientDF['Estimated Coefficients']
+
+#%% Display estimated error coefficient values
+
+print('\nEstimated Error Coefficients')
 n = 0
 for coef in print_List[trimmed_A_filt]:
     coeff_dict[coef] = coeff_list[n]
     n += 1
 
 # coeff_dict['Est_K_1'] = coeff_dict['Est_K_1'] + 1
-m = 0
 for coeff, value in coeff_dict.items():
     print(f"{coeff}: {value}")
-    if m == N_model_end+1:
-        break
-    else:
-        m += 1
 
-    
 print('\nAcclerometer Simulation Error Coefficients')    
 i = 0
 print('V_0: 0')
@@ -215,6 +226,18 @@ for coeff, value in AccelOne.AccelModelCoef.items():
         break
     else:
         i += 1
+        
+print('\nDifference between Estimate and Set Error Coefficients')    
+j = 0
+for coeff, value in AccelOne.AccelModelCoef.items():
+    err = coeff_dict["Est_" + coeff] + value
+    print(f"Error in {coeff}: {err}")
+    if j == N_model_end:
+        break
+    else:
+        j += 1        
+
+ 
         
 #%%  Plot the residual
 
