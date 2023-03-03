@@ -19,24 +19,27 @@ import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 
-#%% Initial Configuration
-generateNewTrajectory = True
-plotcheck = False
+#%% Initial Configuration Parameters
 
+#Coefficients
+g = 9.791807  
+
+#Generate New Trajectory and RPV
+generateNewTrajectory = False
 
 # NoZeroVel = No portions of zero velocity areas
 # Start = Zero velocity area at beginning
 # StartEnd = Zero velocity are at beginning and end
-
 RPVType = 'NoZeroVel'
 
+# Used to play around with coefficients
 changeDefaultCoef = False
 CoeffDict = {'K_0': .05}
 
+# Used to determine how many coefficients to calculate
 N_model_start = 0  #  0 =  K_1 (Scale Factor), 1 = K_0 (Bias), 2 = K_2, etc. 
 N_model_end = 1   #  0 = K_1 (Scale Factor), 1 = K_0 (Bias), 2 = K_2, etc. 
 
-g = 9.791807  
 # Fix indexing numbers
 N_model_start_idx = N_model_start
 N_model_end_idx = N_model_end + 1
@@ -65,7 +68,7 @@ if RPVType == 'Start':
 elif RPVType == 'StartEnd':
     trackRPV = pd.read_pickle("./trackRPV_0Vel_StartEnd.pkl") 
 elif RPVType == 'NoZeroVel':
-    trackRPV = pd.read_pickle("./trackRPV__noZeroVel.pkl") 
+    trackRPV = pd.read_pickle("./trackRPV_noZeroVel.pkl") 
 else:
     print('No acceptable RPV type selected. Using RPV with no 0Vel areas...')
     trackRPV = pd.read_pickle("./trackRPV_noZeroVel.pkl") 
@@ -191,15 +194,21 @@ print('\nEstimated Error Coefficients')
 n = 0
 for coef in print_List[trimmed_A_filt]:
     coeff_dict[coef] = coeff_list[n]
-    n += 1 
+    n += 1
 
 # coeff_dict['Est_K_1'] = coeff_dict['Est_K_1'] + 1
-
+m = 0
 for coeff, value in coeff_dict.items():
     print(f"{coeff}: {value}")
+    if m == N_model_end+1:
+        break
+    else:
+        m += 1
+
     
 print('\nAcclerometer Simulation Error Coefficients')    
 i = 0
+print('V_0: 0')
 for coeff, value in AccelOne.AccelModelCoef.items():
     print(f"{coeff}: {value}")
     if i == N_model_end:
