@@ -135,13 +135,11 @@ def generateReferenceTrajectory():
     
     return 
 
+#%% Generate Track RPV Function 
+
 def generateTrackRPV(referenceTrajectory):
         
     trackRPV = pd.DataFrame()
-    
-    # Length_time = np.linspace(trackTruth['Time'][:0] - trackTruth['Time'][:-1]
-    
-    # totDist = 100 + trackTruth_uniq['IntDist_x'][-1:] - trackTruth_uniq['IntDist_x'][:1]
     
     Interupter_delta = 4.5 * 0.3048 # ft converted to meters
     TrackLength = 10000   # Meters
@@ -150,11 +148,30 @@ def generateTrackRPV(referenceTrajectory):
     
     trackRPV['Time'] = np.interp(trackRPV['Interupters_DwnTrk_dist'],referenceTrajectory['IntDist_x'],referenceTrajectory['Time'])
     
+
+    
     trackRPV = trackRPV[trackRPV['Interupters_DwnTrk_dist'] <= referenceTrajectory['IntDist_x'].max()]
     
     trackRPV = trackRPV.drop_duplicates(subset=['Time'])
     
     trackRPV = trackRPV[:-1]
+    
+    
+    trackRPV_zeroVel= pd.DataFrame()
+    trackRPV_zeroVel_start = pd.DataFrame() 
+    trackRPV_zeroVel_end = pd.DataFrame()
+    
+    trackRPV_zeroVel_start['Time'] = referenceTrajectory['Time'][referenceTrajectory['Time']<trackRPV['Time'].min()]
+    trackRPV_zeroVel_start['Interupters_DwnTrk_dist'] = 0
+    
+    trackRPV_zeroVel_end['Time'] = referenceTrajectory['Time'][referenceTrajectory['Time']>trackRPV['Time'].max()]
+    trackRPV_zeroVel_end['Interupters_DwnTrk_dist'] = trackRPV['Interupters_DwnTrk_dist'].max()
+    
+    trackRPV_zeroVel = pd.concat((trackRPV_zeroVel_start,trackRPV_zeroVel_end), axis = 0)
+    
+    trackRPV = pd.concat((trackRPV, trackRPV_zeroVel), axis = 0)
+    
+    trackRPV = trackRPV.sort_values(by='Time').reset_index(drop=True)
     
     #%% Save track RPV to pickle file
     trackRPV.to_pickle("./trackRPV.pkl")
