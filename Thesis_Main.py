@@ -30,7 +30,7 @@ generateNewTrajectory = False
 # NoZeroVel = No portions of zero velocity areas
 # Start = Zero velocity area at beginning
 # StartEnd = Zero velocity are at beginning and end
-RPVType = 'NoZeroVel'
+RPVType = 'StartEnd'
 
 # Used to play around with coefficients
 changeDefaultCoef = False
@@ -183,11 +183,16 @@ coeff_list = tuple(None for _ in range(trimmed_A.shape[1]))
 
 coeff_list = np.linalg.lstsq(trimmed_A*g, Ve_x, rcond=None)[0]
 
+print_List = np.array(list(coeff_dict.keys()))
+
+n = 0
+for coef in print_List[trimmed_A_filt]:
+    coeff_dict[coef] = coeff_list[n]
+    n += 1
+
 ## UPDATE COEFFICIENT VALUES TO RIGHT UNITS.
 
 #%% Save results to DataFrame
-
-print_List = np.array(list(coeff_dict.keys()))
 
 coefficientDF = pd.DataFrame()
 
@@ -209,15 +214,11 @@ coefficientDF = pd.merge(coefficientDF,estimatedCoefficients,left_index=True, ri
 
 coefficientDF['Coefficient Estimate Error'] = coefficientDF['Accel Model'] + coefficientDF['Estimated Coefficients']
 
+coefficientDF.to_pickle(f"./coefficientDF_{RPVType}.pkl")
 
 #%% Display estimated error coefficient values
 
 print('\nEstimated Error Coefficients')
-n = 0
-for coef in print_List[trimmed_A_filt]:
-    coeff_dict[coef] = coeff_list[n]
-    n += 1
-
 m = 0 
 # coeff_dict['Est_K_1'] = coeff_dict['Est_K_1'] + 1
 for coeff, value in coeff_dict.items():
