@@ -119,7 +119,7 @@ def generateReferenceTrajectory():
 
     # Change final acceleration after stop to zero. Determined visually
     print("Setting final acceleration at 0...")
-    referenceTrajectory['refAccel_x'][4992:] = 0
+    referenceTrajectory['refAccel_x'][4968:] = 0
     
     
     #%% Truth Gen Step 5 -  Integrate truth acceleration to get velocity and distance
@@ -127,7 +127,7 @@ def generateReferenceTrajectory():
     
     # Change final Velocity after stop to zero. Determined visually
     print("Setting final velocity at 0...")
-    referenceTrajectory['refVel_x'][4992:] = 0
+    referenceTrajectory['refVel_x'][4968:] = 0
     
     referenceTrajectory['refDist_x'] = integrate.cumulative_trapezoid(y = referenceTrajectory['refVel_x'],x = referenceTrajectory['Time'],initial = 0) 
 
@@ -165,13 +165,18 @@ def generateTrackRPV(referenceTrajectory):
     
     trackRPV_zeroVel= pd.DataFrame()
     trackRPV_zeroVel_start = pd.DataFrame() 
-    trackRPV_zeroVel_end = pd.DataFrame()
+ 
     
     trackRPV_zeroVel_start['Time'] = referenceTrajectory['Time'][referenceTrajectory['Time']<trackRPV['Time'].min()]
     trackRPV_zeroVel_start['Interupters_DwnTrk_dist'] = 0
     
-    trackRPV_zeroVel_end['Time'] = referenceTrajectory['Time'][referenceTrajectory['Time']>trackRPV['Time'].max()]
-    trackRPV_zeroVel_end['Interupters_DwnTrk_dist'] = trackRPV['Interupters_DwnTrk_dist'].max()
+    
+    trackRPV_zeroVel_end = pd.DataFrame()
+    
+    # trackRPV_zeroVel_end['Time'] = referenceTrajectory['Time'][referenceTrajectory['refVel_x']==0]
+    # trackRPV_zeroVel_end['Time'] = trackRPV_zeroVel_end['Time'][trackRPV_zeroVel_end['Time']>trackRPV['Time'].max()]
+    # trackRPV_zeroVel_end['Interupters_DwnTrk_dist'] = referenceTrajectory['refDist_x'].max()
+    # trackRPV_zeroVel_end = trackRPV_zeroVel_end.dropna()
     
     trackRPV_zeroVel = pd.concat((trackRPV_zeroVel_start,trackRPV_zeroVel_end), axis = 0)
     

@@ -54,6 +54,15 @@ if generateNewTrajectory == True:
     
 trackRPV = pd.read_pickle("./trackRPV.pkl") 
 
+#%%
+
+# trackRPV_zeroVel_end = pd.DataFrame()
+
+
+# trackRPV_zeroVel_end['Time'] = referenceTrajectory['Time'][referenceTrajectory['refVel_x']==0]
+# trackRPV_zeroVel_end['Time'] = trackRPV_zeroVel_end['Time'][trackRPV_zeroVel_end['Time']>trackRPV['Time'].max()]
+
+# trackRPV_zeroVel_end['Interupters_DwnTrk_dist'] = referenceTrajectory['refDist_x'].max()
 
 #%% ACCEL SIM Step 1 - Simulate a Acceleromter with Bias using Accelerometer class
 """
@@ -95,8 +104,6 @@ Dist_Error['Time'] = trackRPV['Time']
 
 trackRPV['SensorInterpDist'] = np.interp(trackRPV['Time'],sensorSim['Time'],sensorSim['SensorSim_Dx'])
 
-px.scatter(trackRPV, x = 'Time', y = ['SensorInterpDist','Interupters_DwnTrk_dist'])
-
 Dist_Error['DistErr_x'] = trackRPV['Interupters_DwnTrk_dist'] - trackRPV['SensorInterpDist']
 
 # Compute Velocity Error
@@ -106,8 +113,8 @@ Ve_t = (trackRPV['Time'].head(-1) + np.diff(Dist_Error['Time'])/2).to_numpy() # 
 Error = pd.DataFrame()
 
 Error['Time'] = Ve_t
-Error['Ax'] = np.interp(Ve_t,sensorSim['Time'],sensorSim['SensorSim_Ax']) 
-Error['Vx'] = np.interp(Ve_t,sensorSim['Time'],sensorSim['SensorSim_Vx'])
+Error['SensorSim_Ax'] = np.interp(Ve_t,sensorSim['Time'],sensorSim['SensorSim_Ax']) 
+Error['SensorSim_Vx'] = np.interp(Ve_t,sensorSim['Time'],sensorSim['SensorSim_Vx'])
 Error['VelErr_x'] = Ve_x
  
 #%% - Regression Analysis
@@ -268,8 +275,8 @@ if Plots == True:
     
     RPV_PlotvsTraj.setTitle('Track Rerence Position Vector vs Reference Trajectory')
     RPV_PlotvsTraj.setYaxisTitle('Distance (m)')
-    sensorSimVTruth_fig2.settwoAxisChoice([False, True])
-    RPV_PlotvsTraj.plotTwoAxis(referenceTrajectory[['RefDist_x']], df_x = referenceTrajectory[['Time']], mode = 'markers')
+    RPV_PlotvsTraj.settwoAxisChoice([False, True])
+    RPV_PlotvsTraj.plotTwoAxis(referenceTrajectory[['refDist_x']], df_x = referenceTrajectory[['Time']], mode = 'markers')
     RPV_PlotvsTraj.addScatter(trackRPV[['Interupters_DwnTrk_dist']], df_x = trackRPV[['Time']])
     RPV_PlotvsTraj.show()   
             
@@ -283,8 +290,9 @@ if Plots == True:
     distVelError_fig.settwoAxisChoice([False, True])
     distVelError_fig.plotTwoAxis(Dist_Error[['DistErr_x']], df_x = Dist_Error[['Time']], mode = 'markers')
     distVelError_fig.addScatter(trackRPV[['Interupters_DwnTrk_dist']], df_x = trackRPV[['Time']], secondary_y = False)
+    distVelError_fig.addScatter(trackRPV[['SensorInterpDist']], df_x = trackRPV[['Time']], secondary_y = False)
     distVelError_fig.addScatter(Error[['VelErr_x']], df_x = Error[['Time']], secondary_y = True)
-    distVelError_fig.addScatter(sensorSim[['Dx']], df_x = sensorSim[['Time']])
+    distVelError_fig.addScatter(sensorSim[['SensorSim_Dx']], df_x = sensorSim[['Time']])
     
     distVelError_fig.show()
     
