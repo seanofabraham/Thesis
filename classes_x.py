@@ -11,12 +11,12 @@ class Accelerometer:
      
         self.g = 9.791807                     # Definition of g
         
-        self.AccelModelCoef = {'K_1': 0,                         # Scale Factor (g/g) NEEDS UPDATED
-                               'K_0': 5            * 10**-6,                          # Bias (g)
+        self.AccelModelCoef = {'K_1': 0,                          # Scale Factor (g/g) NEEDS UPDATED
+                               'K_0': 5            * 10**-6,      # Bias (g)
                                'K_2': 60.14440651  * 10**-6,      # is second-order coefficient (g/g^2)
                                'K_3': 0.0151975    * 10**-6,      # is third-order coefficient  (g/g^3)
                                'K_4': 0.00578331   * 10**-6,      # is fourth-order coefficient (g/g^4)
-                               'K_5': 0.002277013  * 10**-6      # is fifth-order coefficient  (g/g^5)
+                               'K_5': 0.002277013  * 10**-6       # is fifth-order coefficient  (g/g^5)
                                }
         
         # self.K_1 = 1                          

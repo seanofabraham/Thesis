@@ -30,15 +30,15 @@ generateNewTrajectory = False
 # NoZeroVel = No portions of zero velocity areas
 # Start = Zero velocity area at beginning
 # StartEnd = Zero velocity are at beginning and end
-RPVType = 'StartEnd'
+RPVType = 'NoZeroVel'
 
 # Used to play around with coefficients
 changeDefaultCoef = False
-CoeffDict = {'K_0': .05}
+CoeffDict = {'K_2': 5E-6}
 
 # Used to determine how many coefficients to calculate
-N_model_start = 0  #  0 =  K_1 (Scale Factor), 1 = K_0 (Bias), 2 = K_2, etc. 
-N_model_end = 1   #  0 = K_1 (Scale Factor), 1 = K_0 (Bias), 2 = K_2, etc. 
+N_model_start = 5     #  0 =  K_1 (Scale Factor), 1 = K_0 (Bias), 2 = K_2, etc. 
+N_model_end = 5      #  0 = K_1 (Scale Factor), 1 = K_0 (Bias), 2 = K_2, etc. 
 
 # Fix indexing numbers
 N_model_start_idx = N_model_start
@@ -142,24 +142,28 @@ Regression Analysis - Scripts used to compute error model
 """
 
 # # Compute coordinate functions
-referenceTrajectory['Ax^2'] = referenceTrajectory[['refAccel_x']]**2
-referenceTrajectory['Ax^3'] = referenceTrajectory[['refAccel_x']]**3
-referenceTrajectory['Ax^4'] = referenceTrajectory[['refAccel_x']]**4
-referenceTrajectory['Ax^5'] = referenceTrajectory[['refAccel_x']]**5
+referenceTrajectory['Ax^2 (g)'] = (referenceTrajectory[['refAccel_x']]/g)**2
+referenceTrajectory['Ax^3 (g)'] = (referenceTrajectory[['refAccel_x']]/g)**3
+referenceTrajectory['Ax^4 (g)'] = (referenceTrajectory[['refAccel_x']]/g)**4
+referenceTrajectory['Ax^5 (g)'] = (referenceTrajectory[['refAccel_x']]/g)**5
 
-referenceTrajectory['intAx^2'] = integrate.cumulative_trapezoid(y = referenceTrajectory['Ax^2'],x = referenceTrajectory['Time'],initial = 0) 
-referenceTrajectory['intAx^3'] = integrate.cumulative_trapezoid(y = referenceTrajectory['Ax^3'],x = referenceTrajectory['Time'],initial = 0) 
-referenceTrajectory['intAx^4'] = integrate.cumulative_trapezoid(y = referenceTrajectory['Ax^4'],x = referenceTrajectory['Time'],initial = 0) 
-referenceTrajectory['intAx^5'] = integrate.cumulative_trapezoid(y = referenceTrajectory['Ax^5'],x = referenceTrajectory['Time'],initial = 0) 
+referenceTrajectory['intAx^2 (g)'] = -integrate.cumulative_trapezoid(y = referenceTrajectory['Ax^2 (g)'],x = referenceTrajectory['Time'],initial = 0) 
+referenceTrajectory['intAx^3 (g)'] = -integrate.cumulative_trapezoid(y = referenceTrajectory['Ax^3 (g)'],x = referenceTrajectory['Time'],initial = 0) 
+referenceTrajectory['intAx^4 (g)'] = -integrate.cumulative_trapezoid(y = referenceTrajectory['Ax^4 (g)'],x = referenceTrajectory['Time'],initial = 0)
+referenceTrajectory['intAx^5 (g)'] = -integrate.cumulative_trapezoid(y = referenceTrajectory['Ax^5 (g)'],x = referenceTrajectory['Time'],initial = 0) 
 
 # Computer Jerk Term
 # sensorSim['Jx'] = 
 
 Vx = np.interp(Ve_t, referenceTrajectory['Time'],referenceTrajectory['refVel_x'])
-intAx_2 = np.interp(Ve_t,referenceTrajectory['Time'],referenceTrajectory['intAx^2']) 
-intAx_3 = np.interp(Ve_t,referenceTrajectory['Time'],referenceTrajectory['intAx^3']) 
-intAx_4 = np.interp(Ve_t,referenceTrajectory['Time'],referenceTrajectory['intAx^4']) 
-intAx_5 = np.interp(Ve_t,referenceTrajectory['Time'],referenceTrajectory['intAx^5']) 
+intAx_2 = np.interp(Ve_t,referenceTrajectory['Time'],referenceTrajectory['intAx^2 (g)']) 
+intAx_3 = np.interp(Ve_t,referenceTrajectory['Time'],referenceTrajectory['intAx^3 (g)']) 
+intAx_4 = np.interp(Ve_t,referenceTrajectory['Time'],referenceTrajectory['intAx^4 (g)']) 
+intAx_5 = np.interp(Ve_t,referenceTrajectory['Time'],referenceTrajectory['intAx^5 (g)'])
+
+coordinateFunctionDF = pd.DataFrame()
+coordinateFunctionDF['Time'] = Ve_t
+ 
 
 coeff_dict = {'Est_V_0': 0, 'Est_K_1': 0, 'Est_K_0': 0, 'Est_K_2': 0, 'Est_K_3': 0, 'Est_K_4': 0, 'Est_K_5': 0}
 
@@ -212,42 +216,13 @@ estimatedCoefficients.replace(0, np.nan, inplace=True)
 
 coefficientDF = pd.merge(coefficientDF,estimatedCoefficients,left_index=True, right_index=True)
 
-coefficientDF['Coefficient Estimate Error'] = coefficientDF['Accel Model'] + coefficientDF['Estimated Coefficients']
+coefficientDF['Coefficient Estimate Error'] = coefficientDF['Accel Model'] - coefficientDF['Estimated Coefficients']
 
 coefficientDF.to_pickle(f"./coefficientDF_{RPVType}.pkl")
 
 #%% Display estimated error coefficient values
 
-print('\nEstimated Error Coefficients')
-m = 0 
-# coeff_dict['Est_K_1'] = coeff_dict['Est_K_1'] + 1
-for coeff, value in coeff_dict.items():
-    print(f"{coeff}: {value}")
-    if m == N_model_end+1:
-        break
-    else:
-        m += 1
-
-print('\nAcclerometer Simulation Error Coefficients')    
-i = 0
-print('V_0: 0')
-for coeff, value in AccelOne.AccelModelCoef.items():
-    print(f"{coeff}: {value}")
-    if i == N_model_end:
-        break
-    else:
-        i += 1
-        
-print('\nDifference between Estimate and Set Error Coefficients')    
-j = 0
-for coeff, value in AccelOne.AccelModelCoef.items():
-    err = coeff_dict["Est_" + coeff] + value
-    print(f"Error in {coeff}: {err}")
-    if j == N_model_end:
-        break
-    else:
-        j += 1        
-
+print(coefficientDF)
         
 #%%  Plot the residual
 
@@ -337,8 +312,22 @@ if Plots == True:
     RPV_PlotvsTraj.plotTwoAxis(referenceTrajectory[['refDist_x']], df_x = referenceTrajectory[['Time']], mode = 'markers')
     RPV_PlotvsTraj.addScatter(trackRPV[['Interupters_DwnTrk_dist']], df_x = trackRPV[['Time']])
     RPV_PlotvsTraj.show()   
-            
     
+    
+    #%% Plot Coordinate Functions
+    coordinatFunc_fig = PlotlyPlot()
+    
+    coordinatFunc_fig.setTitle('Coordinate Functions vs Error')
+    coordinatFunc_fig.setYaxisTitle('Distance (m)')
+    coordinatFunc_fig.setYaxis2Title('Accleration (m/s/s)')
+    coordinatFunc_fig.settwoAxisChoice([False, True])
+    coordinatFunc_fig.plotTwoAxis(Error[['VelErr_x']], df_x = Dist_Error[['Time']], mode = 'markers')
+    coordinatFunc_fig.addScatter(AccelOne.AccelModelCoef['K_2'], df_x = referenceTrajectory[['Time']], secondary_y = False)
+    # coordinatFunc_fig.addScatter(referenceTrajectory[['refAccel_x']], df_x = referenceTrajectory[['Time']], secondary_y = True)
+    
+    coordinatFunc_fig.show()
+
+
     #%% Plot Velcocity and Distance Errors
     distVelError_fig = PlotlyPlot()
     
@@ -347,85 +336,36 @@ if Plots == True:
     distVelError_fig.setYaxis2Title('Velocity (m/s)')
     distVelError_fig.settwoAxisChoice([False, True])
     distVelError_fig.plotTwoAxis(Dist_Error[['DistErr_x']], df_x = Dist_Error[['Time']], mode = 'markers')
-    distVelError_fig.addScatter(trackRPV[['Interupters_DwnTrk_dist']], df_x = trackRPV[['Time']], secondary_y = False)
-    distVelError_fig.addScatter(trackRPV[['SensorInterpDist']], df_x = trackRPV[['Time']], secondary_y = False)
+    # distVelError_fig.addScatter(trackRPV[['Interupters_DwnTrk_dist']], df_x = trackRPV[['Time']], secondary_y = False)
+    # distVelError_fig.addScatter(trackRPV[['SensorInterpDist']], df_x = trackRPV[['Time']], secondary_y = False)
     distVelError_fig.addScatter(Error[['VelErr_x']], df_x = Error[['Time']], secondary_y = True)
-    distVelError_fig.addScatter(sensorSim[['SensorSim_Dx']], df_x = sensorSim[['Time']])
+    # distVelError_fig.addScatter(sensorSim[['SensorSim_Dx']], df_x = sensorSim[['Time']])
     
     distVelError_fig.show()
-    
-    # velocityError_fig = PlotlyPlot()
-    
-    # velocityError_fig.setTitle('Distance and Velocity Error')
-    # velocityError_fig.setYaxisTitle('Distance Error (m)')
-    # velocityError_fig.setYaxis2Title('Velocity Error (m/s)')
-    # velocityError_fig.settwoAxisChoice([False, True])
-    # velocityError_fig.plotTwoAxis(Error[['VelErr_x']], df_x = Error[['Time']])
-    # velocityError_fig.addScatter(trackRPV[['Interupters_DwnTrk_dist']], df_x = trackRPV[['Time']])
-    
-    # distanceError_fig.show()
-    
-    #%% Plot Residuals
-    Figure7 = PlotlyPlot()
-    
-    Figure7.setTitle('Velocity Residuals')
-    Figure7.setYaxisTitle('Velocity Error (m/s)')
-    Figure7.setYaxis2Title('Velocity (m/s)')
-    Figure7.settwoAxisChoice([False])
-    Figure7.plotTwoAxis(Error[['VelErr_x']], df_x = Error[['Time']])
-    # Figure7.addScatter(referenceTrajectory[['IntVel_x']], df_x = referenceTrajectory[['Time']],secondary_y=True)
-    Figure7.addScatter(trackRPV[['Interupters_DwnTrk_dist']], df_x = trackRPV[['Time']],secondary_y=True)
-
-
-    Figure7.show()
-    
-    #%% Plot Error vs Velocity and Acceleration
-
-    Figure_VelErrorVsVel = PlotlyPlot()
-
-    Figure_VelErrorVsVel.setTitle('Velocity Error')
-    Figure_VelErrorVsVel.setYaxisTitle('Velocity Error (m/s)')
-    Figure_VelErrorVsVel.setYaxis2Title('Velocity (m/s)')
-    Figure_VelErrorVsVel.setXaxisTitle('GPS Time (s)')
-    Figure_VelErrorVsVel.settwoAxisChoice([False, True])
-    Figure_VelErrorVsVel.plotTwoAxis(Dist_Error[['De_x']], df_x = Dist_Error[['Time']])
-    Figure_VelErrorVsVel.addLine(Error[['Vx']], df_x = Error[['Time']],secondary_y=True)
-    Figure_VelErrorVsVel.show()
-
-    Figure_VelErrorVsAccel = PlotlyPlot()
-
-    Figure_VelErrorVsAccel.setTitle('Velocity Error')
-    Figure_VelErrorVsAccel.setYaxisTitle('Velocity Error (m/s)')
-    Figure_VelErrorVsAccel.setYaxis2Title('Velocity (m/s)')
-    Figure_VelErrorVsAccel.setXaxisTitle('GPS Time (s)')
-    Figure_VelErrorVsAccel.settwoAxisChoice([False, True])
-    Figure_VelErrorVsAccel.plotTwoAxis(Error[['VelErr_x']], df_x = Error[['Time']])
-    Figure_VelErrorVsAccel.addLine(Error[['Ax']], df_x = Error[['Time']],secondary_y=True)
-    Figure_VelErrorVsAccel.show()
 
 #%% Plots Residuals Acceleration and Velocity
     
-    Figure = PlotlyPlot()
+    ResidualsVsVel_fig = PlotlyPlot()
     
-    Figure.setTitle('Residuals')
-    Figure.setYaxisTitle('Velocity Error Residuals (m/s)))')
-    Figure.setYaxis2Title('Velocity (m/s)')
-    Figure.setXaxisTitle('GPS Time (s)')
-    Figure.settwoAxisChoice([False, True])
-    Figure.plotTwoAxis(Error[['Ve_x_Resid']], df_x = Error[['Time']])
-    Figure.addLine(Error[['Vx']], df_x = Error[['Time']],secondary_y=True)
-    Figure.show()
+    ResidualsVsVel_fig.setTitle('Residuals')
+    ResidualsVsVel_fig.setYaxisTitle('Velocity Error Residuals (m/s)))')
+    ResidualsVsVel_fig.setYaxis2Title('Velocity (m/s)')
+    ResidualsVsVel_fig.setXaxisTitle('GPS Time (s)')
+    ResidualsVsVel_fig.settwoAxisChoice([False, True])
+    ResidualsVsVel_fig.plotTwoAxis(Error[['Ve_x_Resid']], df_x = Error[['Time']])
+    ResidualsVsVel_fig.addLine(Error[['SensorSim_Vx']], df_x = Error[['Time']],secondary_y=True)
+    ResidualsVsVel_fig.show()
     
-    Figure_x = PlotlyPlot()
+    ResidualsVsAccel_fig = PlotlyPlot()
     
-    Figure_x.setTitle('Residuals')
-    Figure_x.setYaxisTitle('Velocity Error Residuals (m/s)')
-    Figure_x.setYaxis2Title('Acceleration (m/s/s)')
-    Figure_x.setXaxisTitle('GPS Time (s)')
-    Figure_x.settwoAxisChoice([False, True])
-    Figure_x.plotTwoAxis(Error[['Ve_x_Resid']], df_x = Error[['Time']])
-    Figure_x.addLine(Error[['Ax']], df_x = Error[['Time']],secondary_y=True)
-    Figure_x.show()
+    ResidualsVsAccel_fig.setTitle('Residuals')
+    ResidualsVsAccel_fig.setYaxisTitle('Velocity Error Residuals (m/s)')
+    ResidualsVsAccel_fig.setYaxis2Title('Acceleration (m/s/s)')
+    ResidualsVsAccel_fig.setXaxisTitle('GPS Time (s)')
+    ResidualsVsAccel_fig.settwoAxisChoice([False, True])
+    ResidualsVsAccel_fig.plotTwoAxis(Error[['Ve_x_Resid']], df_x = Error[['Time']])
+    ResidualsVsAccel_fig.addLine(Error[['SensorSim_Ax']], df_x = Error[['Time']],secondary_y=True)
+    ResidualsVsAccel_fig.show()
         
 #%% Plot Velocity Error versus velocity error model
     VelErrVsResid = PlotlyPlot()
