@@ -123,7 +123,7 @@ def RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_mod
     trimmed_A_filt = np.zeros(complete_A.shape[1], dtype = bool)
     trimmed_A_filt[0] = 1
     
-    trimmed_A_filt[N_model[0]+1:N_model[1]] = 1
+    trimmed_A_filt[N_model[0]+1:N_model[1]+1] = 1
     
     trimmed_A = complete_A[:,trimmed_A_filt]
     

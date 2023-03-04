@@ -35,8 +35,6 @@ N_model = [0,0]
 N_model[0] = N_model_start
 N_model[1]= N_model_end + 1
 
-
-
 #%% Generate or import trajectory
 """
 Generates or creates reference trajectory from EGI data. 
