@@ -17,11 +17,6 @@ g = 9.791807
 generateNewTrajectory = False
 generateNewRPV = False
 
-# NoZeroVel = No portions of zero velocity areas
-# Start = Zero velocity area at beginning
-# StartEnd = Zero velocity are at beginning and end
-RPVType = 'NoZeroVel'
-
 # Used to play around with coefficients
 changeDefaultCoeff = False
 CoeffDict = {'K_2': 5E-6}
@@ -54,15 +49,7 @@ referenceTrajectory = pd.read_pickle("./referenceTrajectory.pkl")
 if generateNewRPV == True:    
     generateTrackRPV(referenceTrajectory)
 
-if RPVType == 'Start':
-    trackRPV = pd.read_pickle("./trackRPV_0Vel_Start.pkl")
-elif RPVType == 'StartEnd':
-    trackRPV = pd.read_pickle("./trackRPV_0Vel_StartEnd.pkl") 
-elif RPVType == 'NoZeroVel':
-    trackRPV = pd.read_pickle("./trackRPV_noZeroVel.pkl") 
-else:
-    print('No acceptable RPV type selected. Using RPV with no 0Vel areas...')
-    trackRPV = pd.read_pickle("./trackRPV_noZeroVel.pkl") 
+trackRPV = pd.read_pickle("./trackRPV_noZeroVel.pkl") 
 
 
 #%% Generate Simulated Accelerometer
