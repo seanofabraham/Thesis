@@ -63,7 +63,7 @@ def lpf(x, omega_c, T):
     return y 
 
 
-def generateReferenceTrajectory():
+def generateReferenceTrajectory(plotcheck = False):
     
     EGI_accel = importEGIData(['Time', 'Ax','Ay','Az'])
     EGI_vel = importEGIData(['Time', 'Vx','Vy', 'Vz'])
@@ -136,6 +136,20 @@ def generateReferenceTrajectory():
     #%% Save trajectory to Pickle File
     
     referenceTrajectory.to_pickle("./referenceTrajectory.pkl")
+    
+    #%% Plots Acceleration and Velocity
+    if plotcheck == True:
+        Figure1 = PlotlyPlot()
+        
+        Figure1.setTitle('EGI Acceleration, Velocity and Smoothed acceleration')
+        Figure1.setYaxisTitle('Acceleration (m/s/s)')
+        Figure1.setYaxis2Title('Velocity (m/s)')
+        Figure1.setXaxisTitle('GPS Time (s)')
+        Figure1.settwoAxisChoice([False, True])
+        Figure1.plotTwoAxis(referenceTrajectory[['Ax','Vx']], df_x= EGI_accel_vel_trim[['New Time']])
+        Figure1.addLine(referenceTrajectory[['refAccel_x']], df_x = referenceTrajectory[['Time']],secondary_y=False)
+        Figure1.show()
+    
     
     return 
 
