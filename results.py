@@ -37,8 +37,8 @@ N_model = [0,0]
 # N_model[0] = N_model_start
 N_model[1]= N_model_end + 1
 
-
-
+# Perform only full model as defined above or look at each individual coefficient.
+individualCoeffAnalysis = True
 
 
 #%% Generate or import trajectory
@@ -63,9 +63,12 @@ if generateNewRPV == True:
 trackRPV = pd.read_pickle(f"./trackRPV_sig{sigmaRPV}_tau{tauRPV}_bias{biasRPV}.pkl") 
 
 
-#%% Generate Simulated Accelerometer
+#%% Generate Simulated Accelerometer for full model
 
 sensorSim, AccelObj = AccelSim(referenceTrajectory, N_model, changeDefaultCoeff, CoeffDict, g)
+
+
+#%% Perform Regression Analysis for full model
 
 coefficientDF, Error = RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_model, g)
 
@@ -75,18 +78,22 @@ Results = {}
 
 Results[f"Coeff: {N_model[0]}-{N_model[1]-1}"] = results_list
 
-for n in range(N_model[1]):
+
+#%% perform Regression Analysis for individual coefficients
+
+if individualCoeffAnalysis == True:
+    for n in range(N_model[1]):
+        
+        N_model[0] = n
+        N_model[1] = n+1
+        
+        sensorSim, AccelObj = AccelSim(referenceTrajectory, N_model, changeDefaultCoeff, CoeffDict, g)
     
-    N_model[0] = n
-    N_model[1] = n+1
+        coefficientDF, Error = RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_model, g)
     
-    sensorSim, AccelObj = AccelSim(referenceTrajectory, N_model, changeDefaultCoeff, CoeffDict, g)
-
-    coefficientDF, Error = RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_model, g)
-
-    results_list = [Error, AccelObj, sensorSim, coefficientDF]
-
-    Results[f"Coeff: {N_model[0]}-{N_model[1]-1}"] = results_list
+        results_list = [Error, AccelObj, sensorSim, coefficientDF]
+    
+        Results[f"Coeff: {N_model[0]}-{N_model[1]-1}"] = results_list
  
 #%% Results Invesigation
 

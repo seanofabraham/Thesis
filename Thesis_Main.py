@@ -10,7 +10,7 @@ This is the main running code for the thesis. It calls the functions needed.
 
 #%% Import Utilities
 
-from Thesis_Utils import *
+# from Thesis_Utils import *
 # from scipy.signal import savgol_filter
 from classes_x import *
 import numpy as np
@@ -162,8 +162,13 @@ def generateReferenceTrajectory(plotcheck = False):
 
 def generateTrackRPV(referenceTrajectory, sigmaRPV, tauRPV, biasRPV):
     
-    print("\n Generating RPVs")
+    print("\n Generating RPV")
     trackRPV = pd.DataFrame()
+    
+    trackRPVzeroVel == "NoZeroVel"
+    
+    if trackRPVzeroVel == "NoZeroVel":
+        print("No zero velocity portions of test selected")
     
     Interupter_delta = 4.5 * 0.3048 # ft converted to meters
     TrackLength = 10000   # Meters
@@ -172,14 +177,11 @@ def generateTrackRPV(referenceTrajectory, sigmaRPV, tauRPV, biasRPV):
     
     trackRPV['Time'] = np.interp(trackRPV['Interupters_DwnTrk_dist'],referenceTrajectory['refDist_x'],referenceTrajectory['Time'])
     
-
     trackRPV = trackRPV[trackRPV['Interupters_DwnTrk_dist'] <= referenceTrajectory['refDist_x'].max()]
     
     trackRPV = trackRPV.drop_duplicates(subset=['Time'])
     
     trackRPV = trackRPV[:-1]
-    
-    
     
     trackRPV_zeroVel_start = pd.DataFrame() 
     trackRPV_zeroVel_start['Time'] = referenceTrajectory['Time'][referenceTrajectory['Time']<trackRPV['Time'].min()]
@@ -197,18 +199,22 @@ def generateTrackRPV(referenceTrajectory, sigmaRPV, tauRPV, biasRPV):
     trackRPV_zeroVel_StartMidEnd = pd.DataFrame()
     trackRPV_zeroVel_StartMid = pd.DataFrame()
 
-    trackRPV_zeroVel_StartEnd = pd.concat((trackRPV_zeroVel_start,trackRPV_zeroVel_end), axis = 0)
+    if trackRPVzeroVel == 'StartEnd':
+        trackRPV_zeroVel_StartEnd = pd.concat((trackRPV_zeroVel_start,trackRPV_zeroVel_end), axis = 0)
+        trackRPV_zeroVel_StartMidEnd = pd.concat((trackRPV, trackRPV_zeroVel_StartEnd), axis = 0)
+        trackRPV_zeroVel_StartMidEnd = trackRPV_zeroVel_StartMidEnd.sort_values(by='Time').reset_index(drop=True)
+        trackRPV_zeroVel_StartMidEnd.to_pickle("./trackRPV_0Vel_StartEnd.pkl")
+    elif trackRPVzeroVel == 'Start':
+        trackRPV_zeroVel_StartMid = pd.concat((trackRPV, trackRPV_zeroVel_start), axis = 0)
+        trackRPV_zeroVel_StartMid = trackRPV_zeroVel_StartMid.sort_values(by='Time').reset_index(drop=True)    
+        trackRPV_zeroVel_StartMid.to_pickle("./trackRPV_0Vel_Start.pkl")
     
-    trackRPV_zeroVel_StartMidEnd = pd.concat((trackRPV, trackRPV_zeroVel_StartEnd), axis = 0)
-    trackRPV_zeroVel_StartMid = pd.concat((trackRPV, trackRPV_zeroVel_start), axis = 0)
     
     trackRPV = trackRPV.sort_values(by='Time').reset_index(drop=True)
     
     #%% Save track RPV to pickle file
-    trackRPV.to_pickle(f"./trackRPV_noZeroVel.pkl")
-    trackRPV_zeroVel_StartMidEnd.to_pickle("./trackRPV_0Vel_StartEnd.pkl")
-    trackRPV_zeroVel_StartMid.to_pickle("./trackRPV_0Vel_Start.pkl")
-    
+    trackRPV.to_pickle(f"./RPVs/trackRPV_sig{sigmaRPV}_tau{tauRPV}_bias{biasRPV}.pkl")
+
     return
 
 
