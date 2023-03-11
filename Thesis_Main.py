@@ -218,9 +218,6 @@ def generateTrackRPV(referenceTrajectory, sigmaRPV, tauRPV, biasRPV):
     return
 
 
-
-
-
 def AccelSim(referenceTrajectory, N_model, changeDefaultCoeff, CoeffDict, g):
     
     #%% ACCEL SIM Step 1 - Simulate a Acceleromter with Bias using Accelerometer class
@@ -283,6 +280,7 @@ def RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_mod
     Error['SensorSim_Ax'] = np.interp(Ve_t,sensorSim['Time'],sensorSim['SensorSim_Ax']) 
     Error['SensorSim_Vx'] = np.interp(Ve_t,sensorSim['Time'],sensorSim['SensorSim_Vx'])
     Error['SensorSim_Dx'] = np.interp(Ve_t,sensorSim['Time'],sensorSim['SensorSim_Dx'])
+    Error['DistErr_x'] = np.interp(Ve_t,Dist_Error['Time'],Dist_Error['DistErr_x']) 
     Error['VelErr_x'] = Ve_x
      
     #%% - Regression Analysis

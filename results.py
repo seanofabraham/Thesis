@@ -184,11 +184,25 @@ if Plots == True:
     coordinatFunc_fig.setYaxisTitle('Distance (m)')
     coordinatFunc_fig.setYaxis2Title('Accleration (m/s/s)')
     coordinatFunc_fig.settwoAxisChoice([False, True])
-    coordinatFunc_fig.plotTwoAxis(Error[['VelErr_x']], df_x = Dist_Error[['Time']], mode = 'markers')
+    coordinatFunc_fig.plotTwoAxis(Error[['VelErr_x']], df_x = Error[['Time']], mode = 'markers')
     coordinatFunc_fig.addScatter(AccelOne.AccelModelCoef['K_2'], df_x = referenceTrajectory[['Time']], secondary_y = False)
     # coordinatFunc_fig.addScatter(referenceTrajectory[['refAccel_x']], df_x = referenceTrajectory[['Time']], secondary_y = True)
-    
     coordinatFunc_fig.show()
+
+
+
+    #%% Plot Velocity Error as Caused by individual Error Coefficients
+    VelErrorCoeffs_fig = PlotlyPlot()
+    
+    VelErrorCoeffs_fig.setTitle('Velocity Errors')
+    VelErrorCoeffs_fig.setYaxisTitle('Velocity (m/s)')
+    VelErrorCoeffs_fig.setYaxis2Title('Velocity (m/s)')
+    VelErrorCoeffs_fig.settwoAxisChoice([False, False])
+    
+    
+    VelErrorCoeffs_fig.addScatter(Error[['VelErr_x']], df_x = Error[['Time']], secondary_y = True)
+    
+    distVelError_fig.show()
 
 
     #%% Plot Velcocity and Distance Errors
@@ -198,13 +212,16 @@ if Plots == True:
     distVelError_fig.setYaxisTitle('Distance (m)')
     distVelError_fig.setYaxis2Title('Velocity (m/s)')
     distVelError_fig.settwoAxisChoice([False, True])
-    distVelError_fig.plotTwoAxis(Dist_Error[['DistErr_x']], df_x = Dist_Error[['Time']], mode = 'markers')
+    distVelError_fig.plotTwoAxis(Error[['DistErr_x']], df_x = Error[['Time']], mode = 'markers')
     # distVelError_fig.addScatter(trackRPV[['Interupters_DwnTrk_dist']], df_x = trackRPV[['Time']], secondary_y = False)
     # distVelError_fig.addScatter(trackRPV[['SensorInterpDist']], df_x = trackRPV[['Time']], secondary_y = False)
     distVelError_fig.addScatter(Error[['VelErr_x']], df_x = Error[['Time']], secondary_y = True)
     # distVelError_fig.addScatter(sensorSim[['SensorSim_Dx']], df_x = sensorSim[['Time']])
     
     distVelError_fig.show()
+
+
+
 
 #%% Plots Residuals Acceleration and Velocity
     
@@ -240,3 +257,11 @@ if Plots == True:
     VelErrVsResid.addScatter(Error[['V_error_model']], df_x = Error[['Time']], secondary_y=False)
     # VelErrVsResid.addScatter(Error[['A_Bias']], df_x = Error[['Time']], secondary_y=False)
     VelErrVsResid.show()
+    
+    
+    
+    
+    
+    
+    
+    
