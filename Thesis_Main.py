@@ -165,7 +165,7 @@ def generateTrackRPV(referenceTrajectory, sigmaRPV, tauRPV, biasRPV):
     print("\n Generating RPV")
     trackRPV = pd.DataFrame()
     
-    trackRPVzeroVel == "NoZeroVel"
+    trackRPVzeroVel = "NoZeroVel"
     
     if trackRPVzeroVel == "NoZeroVel":
         print("No zero velocity portions of test selected")

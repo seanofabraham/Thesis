@@ -7,6 +7,7 @@ Created on Fri Mar  3 12:46:04 2023
 """
 
 from Thesis_Main import *
+import os.path
 # from Thesis_Utils import *
 
 #%% Initial Configuration Parameters
@@ -18,28 +19,41 @@ g = 9.791807
 generateNewTrajectory = False
 
 #Generate New RPV (with configuration parameters)
-sigmaRPV = 5E-1     # Meters??
+
+
+sigmaRPV = 0     # Meters??
 tauRPV =  0         # Time Lag Error (seconds)
 biasRPV = 0         # Bias error in RPV (meters)
 
-generateNewRPV = False
 
 # Used to play around with coefficients
 changeDefaultCoeff = False
 CoeffDict = {'K_2': 5E-6}
 
 # Used to determine how many coefficients to calculate
+
 N_model_start = 0     #  0 =  K_1 (Scale Factor), 1 = K_0 (Bias), 2 = K_2, etc. 
 N_model_end = 5      #  0 = K_1 (Scale Factor), 1 = K_0 (Bias), 2 = K_2, etc. 
+
+# Definition of which coefficients will be computed based on above selections. 
+ModelDict = {'0': 'K_1',
+             '1': 'K_0',
+             '2': 'K_2',
+             '3': 'K_3',
+             '4': 'K_4',
+             '5': 'K_5'}
+
 
 N_model = [0,0]
 # # Fix indexing numbers
 # N_model[0] = N_model_start
 N_model[1]= N_model_end + 1
 
+
 # Perform only full model as defined above or look at each individual coefficient.
 individualCoeffAnalysis = True
 
+             
 
 #%% Generate or import trajectory
 """
@@ -57,10 +71,12 @@ referenceTrajectory = pd.read_pickle("./referenceTrajectory.pkl")
 #%%
 # Generate track reference position vectory
 
-if generateNewRPV == True:    
+generateNewRPV = os.path.isfile(f"./RPVs/trackRPV_sig{sigmaRPV}_tau{tauRPV}_bias{biasRPV}.pkl")
+
+if generateNewRPV == False:    
     generateTrackRPV(referenceTrajectory, sigmaRPV, tauRPV, biasRPV)
 
-trackRPV = pd.read_pickle(f"./trackRPV_sig{sigmaRPV}_tau{tauRPV}_bias{biasRPV}.pkl") 
+trackRPV = pd.read_pickle(f"./RPVs/trackRPV_sig{sigmaRPV}_tau{tauRPV}_bias{biasRPV}.pkl") 
 
 
 #%% Generate Simulated Accelerometer for full model
@@ -76,7 +92,7 @@ results_list = [Error, AccelObj, sensorSim, coefficientDF]
 
 Results = {}
 
-Results[f"Coeff: {N_model[0]}-{N_model[1]-1}"] = results_list
+Results[f"Coeff: {ModelDict[str(N_model[0])]}-{ModelDict[str(N_model[1]-1)]}"] = results_list
 
 
 #%% perform Regression Analysis for individual coefficients
@@ -93,7 +109,7 @@ if individualCoeffAnalysis == True:
     
         results_list = [Error, AccelObj, sensorSim, coefficientDF]
     
-        Results[f"Coeff: {N_model[0]}-{N_model[1]-1}"] = results_list
+        Results[f"Coeff: {ModelDict[str(N_model[0])]}-{ModelDict[str(N_model[1]-1)]}"] = results_list
  
 #%% Results Invesigation
 
@@ -114,8 +130,8 @@ PLOTS
 N_model[0] = 0
 N_model[1] = 5
     
-Error = Results(f"Coeff: {N_model[0]}-{N_model[1]-1}")[0]
-sensorSim = Results(f"Coeff: {N_model[0]}-{N_model[1]-1}")[2]
+Error = Results[f"Coeff: {ModelDict[str(N_model[0])]}-{ModelDict[str(N_model[1])]}"][0]
+sensorSim = Results[f"Coeff: {ModelDict[str(N_model[0])]}-{ModelDict[str(N_model[1])]}"][2]
 
     
 #%%
@@ -192,17 +208,43 @@ if Plots == True:
 
 
     #%% Plot Velocity Error as Caused by individual Error Coefficients
+    
+    DistErrorCoeffs_fig = PlotlyPlot()
+    
+    DistErrorCoeffs_fig.setTitle('Distance Errors')
+    DistErrorCoeffs_fig.setYaxisTitle('Distance (m)')
+    DistErrorCoeffs_fig.setYaxis2Title('Distance (m)')
+    DistErrorCoeffs_fig.settwoAxisChoice([False, False])
+    init = True 
+    for key in Results:
+        Error = Results[key][0]
+        if init == True:
+            DistErrorCoeffs_fig.plotTwoAxis(Error[['DistErr_x']], df_x = Error[['Time']], name = key, mode = 'markers')
+            init = False
+        else:
+            DistErrorCoeffs_fig.addScatter(Error[['DistErr_x']], df_x = Error[['Time']], secondary_y = False, name = key)
+        
+    DistErrorCoeffs_fig.show()
+    
+    
+    
     VelErrorCoeffs_fig = PlotlyPlot()
     
     VelErrorCoeffs_fig.setTitle('Velocity Errors')
     VelErrorCoeffs_fig.setYaxisTitle('Velocity (m/s)')
     VelErrorCoeffs_fig.setYaxis2Title('Velocity (m/s)')
     VelErrorCoeffs_fig.settwoAxisChoice([False, False])
+    init = True 
+    for key in Results:
+        Error = Results[key][0]
+        if init == True:
+            VelErrorCoeffs_fig.plotTwoAxis(Error[['VelErr_x']], df_x = Error[['Time']], name = key, mode = 'markers')
+            init = False
+        else:
+            VelErrorCoeffs_fig.addScatter(Error[['VelErr_x']], df_x = Error[['Time']], secondary_y = False, name = key)
+        
+    VelErrorCoeffs_fig.show()
     
-    
-    VelErrorCoeffs_fig.addScatter(Error[['VelErr_x']], df_x = Error[['Time']], secondary_y = True)
-    
-    distVelError_fig.show()
 
 
     #%% Plot Velcocity and Distance Errors

@@ -120,7 +120,7 @@ class PlotlyPlot:
             
         return
 
-    def plotTwoAxis(self, df, df_x, mode = 'lines'):
+    def plotTwoAxis(self, df, df_x, mode = 'lines', name = None):
         
         #df is a dataframe
         #LeftRight is a list of booleans that determine which y data gets plotted on second axis
@@ -132,9 +132,15 @@ class PlotlyPlot:
        
         for col in df:
             # Add Traces
-            self.fig.add_trace(
-                go.Scatter(x = df_x.iloc[:,0], y = df[col], name = col, mode = mode),
-                secondary_y = self.twoAxisChoice[count],)
+            if name != None: 
+                self.fig.add_trace(
+                    go.Scatter(x = df_x.iloc[:,0], y = df[col], name = name, mode = mode),
+                    secondary_y = self.twoAxisChoice[count],)
+            else:
+                self.fig.add_trace(
+                    go.Scatter(x = df_x.iloc[:,0], y = df[col], name = col, mode = mode),
+                    secondary_y = self.twoAxisChoice[count],)
+            
             count += 1
             
         # Add Title 
@@ -148,10 +154,11 @@ class PlotlyPlot:
 
         return
     
-    def addScatter(self,df, df_x, secondary_y = None):
+    def addScatter(self,df, df_x, secondary_y = None, name = None):
         
-        name = df.columns.values[0]
-        
+        if name == None:
+            name = df.columns.values[0]
+            
         if secondary_y != None:
             self.twoAxisChoice.append(secondary_y)
             self.fig.add_trace(go.Scatter(x = df_x.iloc[:,0],y = df.iloc[:,0], name = name, mode = 'markers'),secondary_y = secondary_y)
