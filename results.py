@@ -7,7 +7,8 @@ Created on Fri Mar  3 12:46:04 2023
 """
 
 from Thesis_Main import *
-from Thesis_Utils import *
+# from Thesis_Utils import *
+
 #%% Initial Configuration Parameters
  
 #Coefficients
@@ -15,6 +16,12 @@ g = 9.791807
 
 #Generate New Trajectory and RPV
 generateNewTrajectory = False
+
+#Generate New RPV (with configuration parameters)
+sigmaRPV = 5E-1     # Meters??
+tauRPV =  0         # Time Lag Error (seconds)
+biasRPV = 0         # Bias error in RPV (meters)
+
 generateNewRPV = False
 
 # Used to play around with coefficients
@@ -26,9 +33,13 @@ N_model_start = 0     #  0 =  K_1 (Scale Factor), 1 = K_0 (Bias), 2 = K_2, etc.
 N_model_end = 5      #  0 = K_1 (Scale Factor), 1 = K_0 (Bias), 2 = K_2, etc. 
 
 N_model = [0,0]
-# Fix indexing numbers
-N_model[0] = N_model_start
+# # Fix indexing numbers
+# N_model[0] = N_model_start
 N_model[1]= N_model_end + 1
+
+
+
+
 
 #%% Generate or import trajectory
 """
@@ -47,9 +58,9 @@ referenceTrajectory = pd.read_pickle("./referenceTrajectory.pkl")
 # Generate track reference position vectory
 
 if generateNewRPV == True:    
-    generateTrackRPV(referenceTrajectory)
+    generateTrackRPV(referenceTrajectory, sigmaRPV, tauRPV, biasRPV)
 
-trackRPV = pd.read_pickle("./trackRPV_noZeroVel.pkl") 
+trackRPV = pd.read_pickle(f"./trackRPV_sig{sigmaRPV}_tau{tauRPV}_bias{biasRPV}.pkl") 
 
 
 #%% Generate Simulated Accelerometer
@@ -58,12 +69,49 @@ sensorSim, AccelObj = AccelSim(referenceTrajectory, N_model, changeDefaultCoeff,
 
 coefficientDF, Error = RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_model, g)
 
+results_list = [Error, AccelObj, sensorSim, coefficientDF]
+
+Results = {}
+
+Results[f"Coeff: {N_model[0]}-{N_model[1]-1}"] = results_list
+
+for n in range(N_model[1]):
+    
+    N_model[0] = n
+    N_model[1] = n+1
+    
+    sensorSim, AccelObj = AccelSim(referenceTrajectory, N_model, changeDefaultCoeff, CoeffDict, g)
+
+    coefficientDF, Error = RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_model, g)
+
+    results_list = [Error, AccelObj, sensorSim, coefficientDF]
+
+    Results[f"Coeff: {N_model[0]}-{N_model[1]-1}"] = results_list
  
+#%% Results Invesigation
+
+for key in Results:
+    
+    print(key)
+    print(Results[key][3])
+    print('\n')
+    
+
 #%% Plots scripts 
 """
 PLOTS
 
 """
+
+# Choose which results you want to look at:
+N_model[0] = 0
+N_model[1] = 5
+    
+Error = Results(f"Coeff: {N_model[0]}-{N_model[1]-1}")[0]
+sensorSim = Results(f"Coeff: {N_model[0]}-{N_model[1]-1}")[2]
+
+    
+#%%
 Plots = False
 
 if Plots == True: 
