@@ -183,35 +183,48 @@ def generateTrackRPV(referenceTrajectory, sigmaRPV, tauRPV, biasRPV):
     
     trackRPV = trackRPV[:-1]
     
-    trackRPV_zeroVel_start = pd.DataFrame() 
-    trackRPV_zeroVel_start['Time'] = referenceTrajectory['Time'][referenceTrajectory['Time']<trackRPV['Time'].min()]
-    trackRPV_zeroVel_start['Interupters_DwnTrk_dist'] = 0
-
+    if trackRPVzeroVel != "NoZeroVel":
+        
+        trackRPV_zeroVel_start = pd.DataFrame() 
+        trackRPV_zeroVel_start['Time'] = referenceTrajectory['Time'][referenceTrajectory['Time']<trackRPV['Time'].min()]
+        trackRPV_zeroVel_start['Interupters_DwnTrk_dist'] = 0
     
-    trackRPV_zeroVel_end = pd.DataFrame()
+        trackRPV_zeroVel_end = pd.DataFrame()
+        
+        trackRPV_zeroVel_end['Time'] = referenceTrajectory['Time'][referenceTrajectory['refVel_x']==0]
+        trackRPV_zeroVel_end['Time'] = trackRPV_zeroVel_end['Time'][trackRPV_zeroVel_end['Time']>trackRPV['Time'].max()]
+        trackRPV_zeroVel_end['Interupters_DwnTrk_dist'] = referenceTrajectory['refDist_x'].max()
+        trackRPV_zeroVel_end = trackRPV_zeroVel_end.dropna()
+        
+        trackRPV_zeroVel_StartEnd = pd.DataFrame()
+        trackRPV_zeroVel_StartMidEnd = pd.DataFrame()
+        trackRPV_zeroVel_StartMid = pd.DataFrame()
     
-    trackRPV_zeroVel_end['Time'] = referenceTrajectory['Time'][referenceTrajectory['refVel_x']==0]
-    trackRPV_zeroVel_end['Time'] = trackRPV_zeroVel_end['Time'][trackRPV_zeroVel_end['Time']>trackRPV['Time'].max()]
-    trackRPV_zeroVel_end['Interupters_DwnTrk_dist'] = referenceTrajectory['refDist_x'].max()
-    trackRPV_zeroVel_end = trackRPV_zeroVel_end.dropna()
-    
-    trackRPV_zeroVel_StartEnd = pd.DataFrame()
-    trackRPV_zeroVel_StartMidEnd = pd.DataFrame()
-    trackRPV_zeroVel_StartMid = pd.DataFrame()
-
-    if trackRPVzeroVel == 'StartEnd':
-        trackRPV_zeroVel_StartEnd = pd.concat((trackRPV_zeroVel_start,trackRPV_zeroVel_end), axis = 0)
-        trackRPV_zeroVel_StartMidEnd = pd.concat((trackRPV, trackRPV_zeroVel_StartEnd), axis = 0)
-        trackRPV_zeroVel_StartMidEnd = trackRPV_zeroVel_StartMidEnd.sort_values(by='Time').reset_index(drop=True)
-        trackRPV_zeroVel_StartMidEnd.to_pickle("./trackRPV_0Vel_StartEnd.pkl")
-    elif trackRPVzeroVel == 'Start':
-        trackRPV_zeroVel_StartMid = pd.concat((trackRPV, trackRPV_zeroVel_start), axis = 0)
-        trackRPV_zeroVel_StartMid = trackRPV_zeroVel_StartMid.sort_values(by='Time').reset_index(drop=True)    
-        trackRPV_zeroVel_StartMid.to_pickle("./trackRPV_0Vel_Start.pkl")
+        if trackRPVzeroVel == 'StartEnd':
+            trackRPV_zeroVel_StartEnd = pd.concat((trackRPV_zeroVel_start,trackRPV_zeroVel_end), axis = 0)
+            trackRPV_zeroVel_StartMidEnd = pd.concat((trackRPV, trackRPV_zeroVel_StartEnd), axis = 0)
+            trackRPV_zeroVel_StartMidEnd = trackRPV_zeroVel_StartMidEnd.sort_values(by='Time').reset_index(drop=True)
+            trackRPV_zeroVel_StartMidEnd.to_pickle("./trackRPV_0Vel_StartEnd.pkl")
+        elif trackRPVzeroVel == 'Start':
+            trackRPV_zeroVel_StartMid = pd.concat((trackRPV, trackRPV_zeroVel_start), axis = 0)
+            trackRPV_zeroVel_StartMid = trackRPV_zeroVel_StartMid.sort_values(by='Time').reset_index(drop=True)    
+            trackRPV_zeroVel_StartMid.to_pickle("./trackRPV_0Vel_Start.pkl")
     
     
     trackRPV = trackRPV.sort_values(by='Time').reset_index(drop=True)
     
+    # Add error to Track RPV
+    if sigmaRPV != 0:
+        noise = np.random.normal(0,sigmaRPV,len(trackRPV)) # Add random noise to RPV
+        trackRPV['Interupters_DwnTrk_dist'] = trackRPV['Interupters_DwnTrk_dist'] + noise
+    
+    if tauRPV != 0:
+        trackRPV['Time'] = trackRPV['Time'] - tauRPV
+        
+    if biasRPV != 0:
+        trackRPV['Interupters_DwnTrk_dist'] = trackRPV['Interupters_DwnTrk_dist'] + biasRPV
+
+
     #%% Save track RPV to pickle file
     trackRPV.to_pickle(f"./RPVs/trackRPV_sig{sigmaRPV}_tau{tauRPV}_bias{biasRPV}.pkl")
 

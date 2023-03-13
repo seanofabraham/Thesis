@@ -19,11 +19,11 @@ g = 9.791807
 generateNewTrajectory = False
 
 #Generate New RPV (with configuration parameters)
+generateNewRPV = False
 
-
-sigmaRPV = 0     # Meters??
-tauRPV =  0         # Time Lag Error (seconds)
-biasRPV = 0         # Bias error in RPV (meters)
+sigmaRPV = 0           # Meters
+tauRPV =  0            # Time Lag Error (seconds)
+biasRPV = 0        # Bias error in RPV (meters)
 
 
 # Used to play around with coefficients
@@ -71,9 +71,10 @@ referenceTrajectory = pd.read_pickle("./referenceTrajectory.pkl")
 #%%
 # Generate track reference position vectory
 
-generateNewRPV = os.path.isfile(f"./RPVs/trackRPV_sig{sigmaRPV}_tau{tauRPV}_bias{biasRPV}.pkl")
+if generateNewRPV == False:   
+    generateNewRPV = not os.path.isfile(f"./RPVs/trackRPV_sig{sigmaRPV}_tau{tauRPV}_bias{biasRPV}.pkl")
 
-if generateNewRPV == False:    
+if generateNewRPV == True:    
     generateTrackRPV(referenceTrajectory, sigmaRPV, tauRPV, biasRPV)
 
 trackRPV = pd.read_pickle(f"./RPVs/trackRPV_sig{sigmaRPV}_tau{tauRPV}_bias{biasRPV}.pkl") 
@@ -193,6 +194,10 @@ if Plots == True:
     RPV_PlotvsTraj.show()   
     
     
+    if sigmaRPV != 0:
+        plotSimple(np.diff(trackRPV['Interupters_DwnTrk_dist']))
+    
+    
     #%% Plot Coordinate Functions
     coordinatFunc_fig = PlotlyPlot()
     
@@ -226,8 +231,7 @@ if Plots == True:
         
     DistErrorCoeffs_fig.show()
     
-    
-    
+
     VelErrorCoeffs_fig = PlotlyPlot()
     
     VelErrorCoeffs_fig.setTitle('Velocity Errors')
