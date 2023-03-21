@@ -21,9 +21,9 @@ generateNewTrajectory = False
 #Generate New RPV (with configuration parameters)
 generateNewRPV = False
 
-sigmaRPV = 0           # Meters
+sigmaRPV = 0.001        # Meters
 tauRPV =  0            # Time Lag Error (seconds)
-biasRPV = 0        # Bias error in RPV (meters)
+biasRPV = 0            # Bias error in RPV (meters)
 
 
 # Used to play around with coefficients
