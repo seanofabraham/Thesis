@@ -340,8 +340,10 @@ def RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_mod
     
     trimmed_A = complete_A[:,trimmed_A_filt]
     
-    # trimmed_A = np.fliplr(trimmed_A)
-    
+    cov_A = np.cov(trimmed_A, rowvar = False)
+
+    Cov_A = pd.DataFrame(cov_A) 
+
     # Linear Regression
     coeff_list = tuple(None for _ in range(trimmed_A.shape[1]))
     
@@ -359,7 +361,14 @@ def RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_mod
     coefficientDF = pd.DataFrame()
     
     coefficientDF = pd.concat((coefficientDF, pd.DataFrame.from_dict(AccelObj.AccelModelCoef, orient = 'index', columns= ['Accel Model'])))
-    coefficientDF = coefficientDF.append(pd.Series([0], index=coefficientDF.columns, name="V_0"))
+
+    # create a new row to append
+    new_row = pd.Series([0], index=coefficientDF.columns, name='V_0')
+
+    # concatenate the two DataFrames along the rows axis
+    coefficientDF = pd.concat([coefficientDF, new_row.to_frame().T], ignore_index=False)
+
+    # coefficientDF = coefficientDF.append(pd.Series([0], index=coefficientDF.columns, name="V_0"))
     
     # Build Estimated Coefficient DF
     estimatedCoefficients = pd.DataFrame.from_dict(coeff_dict, orient = 'index', columns= ['Estimated Coefficients'])
@@ -396,5 +405,4 @@ def RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_mod
         Error.to_pickle(f"./ErrorDF_{N_model[0]}-{N_model[1]}.pkl")
         coefficientDF.to_pickle(f"./coefficientDF_{N_model[0]}-{N_model[1]}.pkl")
 
-    return [coefficientDF, Error]
-
+    return [coefficientDF, Error, Cov_A]

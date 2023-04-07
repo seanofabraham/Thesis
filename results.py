@@ -2,15 +2,13 @@
 # -*- coding: utf-8 -*-
 """
 Created on Fri Mar  3 12:46:04 2023
-
 @author: seanabrahamson
 """
-
+#%%
 from Thesis_Main import *
 import os.path
-# from Thesis_Utils import *
 
-#%% Initial Configuration Parameters
+# Initial Configuration Parameters
  
 #Coefficients
 g = 9.791807  
@@ -21,7 +19,7 @@ generateNewTrajectory = False
 #Generate New RPV (with configuration parameters)
 generateNewRPV = False
 
-sigmaRPV = 0.001        # Meters
+sigmaRPV = 0        # Meters
 tauRPV =  0            # Time Lag Error (seconds)
 biasRPV = 0            # Bias error in RPV (meters)
 
@@ -52,8 +50,6 @@ N_model[1]= N_model_end + 1
 
 # Perform only full model as defined above or look at each individual coefficient.
 individualCoeffAnalysis = True
-
-             
 
 #%% Generate or import trajectory
 """
@@ -87,9 +83,9 @@ sensorSim, AccelObj = AccelSim(referenceTrajectory, N_model, changeDefaultCoeff,
 
 #%% Perform Regression Analysis for full model
 
-coefficientDF, Error = RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_model, g)
+coefficientDF, Error, Cov_A = RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_model, g)
 
-results_list = [Error, AccelObj, sensorSim, coefficientDF]
+results_list = [Error, AccelObj, sensorSim, coefficientDF, Cov_A]
 
 Results = {}
 
@@ -106,9 +102,9 @@ if individualCoeffAnalysis == True:
         
         sensorSim, AccelObj = AccelSim(referenceTrajectory, N_model, changeDefaultCoeff, CoeffDict, g)
     
-        coefficientDF, Error = RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_model, g)
+        coefficientDF, Error, Cov_A = RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_model, g)
     
-        results_list = [Error, AccelObj, sensorSim, coefficientDF]
+        results_list = [Error, AccelObj, sensorSim, coefficientDF, Cov_A]
     
         Results[f"Coeff: {ModelDict[str(N_model[0])]}-{ModelDict[str(N_model[1]-1)]}"] = results_list
  
@@ -119,14 +115,19 @@ for key in Results:
     print(key)
     print(Results[key][3])
     print('\n')
-    
+
+pd.set_option('display.float_format', lambda x: '{:.8f}'.format(x))
+print("Covariance Matrix")
+print(Results['Coeff: K_1-K_5'][4]) 
+print('\n')
 
 #%% Plots scripts 
-"""
+
+""" 
+------------------------------------------------------------------------------------------------
 PLOTS
-
+------------------------------------------------------------------------------------------------
 """
-
 # Choose which results you want to look at:
 N_model[0] = 0
 N_model[1] = 5
