@@ -340,7 +340,7 @@ def RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_mod
     
     trimmed_A = complete_A[:,trimmed_A_filt]
     
-    # trimmed_A = np.fliplr(trimmed_A)
+    covariance_A = np.cov(trimmed_A, rowvar = False)
     
     # Linear Regression
     coeff_list = tuple(None for _ in range(trimmed_A.shape[1]))
@@ -396,5 +396,5 @@ def RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_mod
         Error.to_pickle(f"./ErrorDF_{N_model[0]}-{N_model[1]}.pkl")
         coefficientDF.to_pickle(f"./coefficientDF_{N_model[0]}-{N_model[1]}.pkl")
 
-    return [coefficientDF, Error]
+    return [coefficientDF, Error, covariance_A]
 

@@ -87,9 +87,9 @@ sensorSim, AccelObj = AccelSim(referenceTrajectory, N_model, changeDefaultCoeff,
 
 #%% Perform Regression Analysis for full model
 
-coefficientDF, Error = RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_model, g)
+coefficientDF, Error, cov_A = RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_model, g)
 
-results_list = [Error, AccelObj, sensorSim, coefficientDF]
+results_list = [Error, AccelObj, sensorSim, coefficientDF, cov_A]
 
 Results = {}
 
@@ -106,9 +106,9 @@ if individualCoeffAnalysis == True:
         
         sensorSim, AccelObj = AccelSim(referenceTrajectory, N_model, changeDefaultCoeff, CoeffDict, g)
     
-        coefficientDF, Error = RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_model, g)
+        coefficientDF, Error, cov_A = RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_model, g)
     
-        results_list = [Error, AccelObj, sensorSim, coefficientDF]
+        results_list = [Error, AccelObj, sensorSim, coefficientDF, cov_A]
     
         Results[f"Coeff: {ModelDict[str(N_model[0])]}-{ModelDict[str(N_model[1]-1)]}"] = results_list
  
@@ -119,7 +119,8 @@ for key in Results:
     print(key)
     print(Results[key][3])
     print('\n')
-    
+   
+print(Results['Coeff: K_1-K_5'][4])    
 
 #%% Plots scripts 
 """
@@ -140,6 +141,20 @@ Plots = False
 
 if Plots == True: 
     
+#%% PLOTS for Thesis
+    refTrajectory_fig = PlotlyPlot()
+    
+    refTrajectory_fig.setTitle('EGI Acceleration and Velocity and Integrated Velocity')
+    refTrajectory_fig.setYaxisTitle('Acceleration (m/s/s)')
+    refTrajectory_fig.setYaxis2Title('Velocity (m/s)')
+    refTrajectory_fig.setXaxisTitle('GPS Time (s)')
+    refTrajectory_fig.settwoAxisChoice([False, True, True])
+    refTrajectory_fig.plotTwoAxis(referenceTrajectory[['refAccel_x']], df_x = referenceTrajectory[['Time']], name = 'Acceleration')
+    refTrajectory_fig.addLine(referenceTrajectory[['refVel_x']], df_x = referenceTrajectory[['Time']],secondary_y=True, name = 'Velocity')
+
+    refTrajectory_fig.show()
+
+
     #%% Plot reference Trajectory Results
     refTrajectory_fig = PlotlyPlot()
     
@@ -148,7 +163,7 @@ if Plots == True:
     refTrajectory_fig.setYaxis2Title('Velocity (m/s)')
     refTrajectory_fig.setXaxisTitle('GPS Time (s)')
     refTrajectory_fig.settwoAxisChoice([False, True, True])
-    refTrajectory_fig.plotTwoAxis(referenceTrajectory[['refAccel_x', 'refVel_x', 'refEGIVel_x']], df_x = referenceTrajectory[['Time']], mode = 'markers')
+    refTrajectory_fig.plotTwoAxis(referenceTrajectory[['refAccel_x', 'refVel_x', 'refEGIVel_x']], df_x = referenceTrajectory[['Time']])
     refTrajectory_fig.show()
 
     refTrajectory_fig2 = PlotlyPlot()
