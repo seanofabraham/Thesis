@@ -26,6 +26,7 @@ tauRPV =  0            # Time Lag Error (seconds)
 biasRPV = 0            # Bias error in RPV (meters)
 
 
+
 # Used to play around with coefficients
 changeDefaultCoeff = False
 CoeffDict = {'K_2': 5E-6}
@@ -126,7 +127,10 @@ print(Results['Coeff: K_1-K_5'][4])
 """
 PLOTS
 
+
 """
+#Choose a Path to save figures to
+saveFigPath = '/Users/seanabrahamson/Box/EE_Masters/Thesis/Thesis_Figures'
 
 # Choose which results you want to look at:
 N_model[0] = 0
@@ -139,21 +143,45 @@ sensorSim = Results[f"Coeff: {ModelDict[str(N_model[0])]}-{ModelDict[str(N_model
 #%%
 Plots = False
 
+saveFigPath = '/Users/seanabrahamson/Box/EE_Masters/Thesis/Thesis_Figures'
+
 if Plots == True: 
     
 #%% PLOTS for Thesis
+#%% Reference Trajectory
     refTrajectory_fig = PlotlyPlot()
     
-    refTrajectory_fig.setTitle('EGI Acceleration and Velocity and Integrated Velocity')
-    refTrajectory_fig.setYaxisTitle('Acceleration (m/s/s)')
-    refTrajectory_fig.setYaxis2Title('Velocity (m/s)')
-    refTrajectory_fig.setXaxisTitle('GPS Time (s)')
-    refTrajectory_fig.settwoAxisChoice([False, True, True])
-    refTrajectory_fig.plotTwoAxis(referenceTrajectory[['refAccel_x']], df_x = referenceTrajectory[['Time']], name = 'Acceleration')
-    refTrajectory_fig.addLine(referenceTrajectory[['refVel_x']], df_x = referenceTrajectory[['Time']],secondary_y=True, name = 'Velocity')
-
+    refTrajectory_fig.setTitle('$\\text{Reference Trajectory} $')
+    refTrajectory_fig.setYaxisTitle('$\\text{Acceleration } (ft/s^2)$')
+    refTrajectory_fig.setYaxis2Title('$\\text{Velocity } (ft/s)$')
+    refTrajectory_fig.setXaxisTitle('$\\text{Time (s)}$')
+    refTrajectory_fig.settwoAxisChoice([False])
+    refTrajectory_fig.plotTwoAxis(referenceTrajectory[['refAccel_x']], df_x = referenceTrajectory[['Time']], Name = '$\\text{Acceleration}$')
+    refTrajectory_fig.addLine(referenceTrajectory[['refVel_x']], df_x = referenceTrajectory[['Time']], Name = '$\\text{Velocity}$', secondary_y=True, )
+    refTrajectory_fig.legendTopRight()    
+    refTrajectory_fig.update_template()
     refTrajectory_fig.show()
 
+    
+    refTrajectory_fig.write_image('ReferenceTrajectory',saveFigPath)
+    
+#%% Reference Position Vector    
+    
+    RPV_PlotvsTraj = PlotlyPlot()
+    
+    RPV_PlotvsTraj.setTitle('Reference Position Vector')
+    RPV_PlotvsTraj.setYaxisTitle('Distance (m)')
+    RPV_PlotvsTraj.setXaxisTitle('Time (S)')
+    RPV_PlotvsTraj.settwoAxisChoice([False, True])
+    RPV_PlotvsTraj.plotTwoAxis(referenceTrajectory[['refDist_x']], df_x = referenceTrajectory[['Time']])
+    RPV_PlotvsTraj.addScatter(trackRPV[['Interupters_DwnTrk_dist']], df_x = trackRPV[['Time']], Mode = 'markers')
+    
+    refTrajectory_fig.legendTopRight()    
+    refTrajectory_fig.update_template()
+    refTrajectory_fig.show()
+
+    RPV_PlotvsTraj.show()  
+    
 
     #%% Plot reference Trajectory Results
     refTrajectory_fig = PlotlyPlot()

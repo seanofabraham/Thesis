@@ -85,6 +85,7 @@ class PlotlyPlot:
         self.y_axis = ''
         self.y_axis_2 = ''
         self.twoAxisChoice = [False,True]
+        self.template = 'simple_white'
         
     def setXaxisTitle(self,title):
         self.x_axis = title
@@ -120,7 +121,7 @@ class PlotlyPlot:
             
         return
 
-    def plotTwoAxis(self, df, df_x, mode = 'lines', name = None):
+    def plotTwoAxis(self, df, df_x, mode = 'lines', Name = None):
         
         #df is a dataframe
         #LeftRight is a list of booleans that determine which y data gets plotted on second axis
@@ -132,9 +133,9 @@ class PlotlyPlot:
        
         for col in df:
             # Add Traces
-            if name != None: 
+            if Name != None: 
                 self.fig.add_trace(
-                    go.Scatter(x = df_x.iloc[:,0], y = df[col], name = name, mode = mode),
+                    go.Scatter(x = df_x.iloc[:,0], y = df[col], name = Name, mode = mode),
                     secondary_y = self.twoAxisChoice[count],)
             else:
                 self.fig.add_trace(
@@ -154,27 +155,41 @@ class PlotlyPlot:
 
         return
     
-    def addScatter(self,df, df_x, secondary_y = None, name = None):
+    def addScatter(self,df, df_x, secondary_y = None, Name = None, Mode = 'markers'):
         
-        if name == None:
+        if Name == None:
             name = df.columns.values[0]
             
         if secondary_y != None:
             self.twoAxisChoice.append(secondary_y)
-            self.fig.add_trace(go.Scatter(x = df_x.iloc[:,0],y = df.iloc[:,0], name = name, mode = 'markers'),secondary_y = secondary_y)
+            self.fig.add_trace(go.Scatter(x = df_x.iloc[:,0],y = df.iloc[:,0], name = Name, mode = Mode),secondary_y = secondary_y)
         else:
-            self.fig.add_trace(go.Scatter(x = df_x.iloc[:,0],y = df.iloc[:,0], name = name, mode = 'markers'))
+            self.fig.add_trace(go.Scatter(x = df_x.iloc[:,0],y = df.iloc[:,0], name = Name, mode = Mode))
     
-    def addLine(self,df, df_x, secondary_y = None, name = None):
+    def addLine(self,df, df_x, secondary_y = None, Name = None):
         
         name = df.columns.values[0]
         
         if secondary_y != None:
             self.twoAxisChoice.append(secondary_y)
-            self.fig.add_trace(go.Scatter(x = df_x.iloc[:,0],y = df.iloc[:,0], name = name),secondary_y = secondary_y)
+            self.fig.add_trace(go.Scatter(x = df_x.iloc[:,0],y = df.iloc[:,0], name = Name),secondary_y = secondary_y)
         else:
-            self.fig.add_trace(go.Scatter(x = df_x.iloc[:,0],y = df.iloc[:,0], name = name))
+            self.fig.add_trace(go.Scatter(x = df_x.iloc[:,0],y = df.iloc[:,0], name = Name))
     
+    def legendTopRight(self):
+        self.fig.update_layout(legend=dict(
+            yanchor="top",
+            y=0.99,
+            xanchor="left",
+            x=0.01
+            ))
+        
+    def update_template(self, Template = 'simple_white'):
+        self.fig.update_layout(template = Template)
+    
+    def write_image(self, figName, path):
+        
+        self.fig.write_image(f"{path}/{figName}.svg")        
     
     def show(self):
         self.fig.show()

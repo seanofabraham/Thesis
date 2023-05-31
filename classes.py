@@ -159,7 +159,7 @@ class PlotlyPlot:
         else:
             self.fig.add_trace(go.Scatter(x = df_x.iloc[:,0],y = df.iloc[:,0], name = name, mode = 'markers'))
     
-    def addLine(self,df, df_x, secondary_y = None):
+    def addLine(self,df, df_x, secondary_y = None, name = None):
         
         name = df.columns.values[0]
         
