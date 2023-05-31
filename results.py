@@ -167,20 +167,40 @@ if Plots == True:
     
 #%% Reference Position Vector    
     
-    RPV_PlotvsTraj = PlotlyPlot()
+    RPV_PlotvsTraj1 = PlotlyPlot()
     
-    RPV_PlotvsTraj.setTitle('Reference Position Vector')
-    RPV_PlotvsTraj.setYaxisTitle('Distance (m)')
-    RPV_PlotvsTraj.setXaxisTitle('Time (S)')
-    RPV_PlotvsTraj.settwoAxisChoice([False, True])
-    RPV_PlotvsTraj.plotTwoAxis(referenceTrajectory[['refDist_x']], df_x = referenceTrajectory[['Time']])
-    RPV_PlotvsTraj.addScatter(trackRPV[['Interupters_DwnTrk_dist']], df_x = trackRPV[['Time']], Mode = 'markers')
+    RPV_PlotvsTraj1.setTitle(figText('Reference Position Vector'))
+    RPV_PlotvsTraj1.setYaxisTitle(figText('Distance (m)'))
+    RPV_PlotvsTraj1.setXaxisTitle(figText('Time (s)'))
+    RPV_PlotvsTraj1.settwoAxisChoice([False, True])
+    RPV_PlotvsTraj1.plotTwoAxis(referenceTrajectory[['refDist_x']], df_x = referenceTrajectory[['Time']], Name = 'Reference Trajectory')
+    RPV_PlotvsTraj1.addScatter(trackRPV[['Interupters_DwnTrk_dist']], df_x = trackRPV[['Time']], Mode = 'markers', Name = 'Reference Position Vector')
     
-    refTrajectory_fig.legendTopRight()    
-    refTrajectory_fig.update_template()
-    refTrajectory_fig.show()
+    zoom_x = [17,20.5]
+    zoom_y = [-40, 60]
+    RPV_PlotvsTraj1.addBox(zoom_x, zoom_y)
+       
+    RPV_PlotvsTraj1.update_template()
 
-    RPV_PlotvsTraj.show()  
+    RPV_PlotvsTraj1.show()
+    RPV_PlotvsTraj1.write_image('ReferencePositionVector1',saveFigPath)
+    
+    
+    RPV_PlotvsTraj2 = PlotlyPlot()
+    
+    RPV_PlotvsTraj2.setTitle(figText('Reference Position Vector'))
+    RPV_PlotvsTraj2.setYaxisTitle(figText('Distance (m)'))
+    RPV_PlotvsTraj2.setXaxisTitle(figText('Time (s))'))
+    RPV_PlotvsTraj2.settwoAxisChoice([False, True])
+    RPV_PlotvsTraj2.plotTwoAxis(referenceTrajectory[['refDist_x']], df_x = referenceTrajectory[['Time']], Name = 'Reference Trajectory')
+    RPV_PlotvsTraj2.addScatter(trackRPV[['Interupters_DwnTrk_dist']], df_x = trackRPV[['Time']], Mode = 'markers', Name = 'Reference Position Vector')
+    
+    RPV_PlotvsTraj2.zoom(zoom_x, zoom_y)
+       
+    RPV_PlotvsTraj2.update_template()
+    RPV_PlotvsTraj2.show()
+    RPV_PlotvsTraj2.write_image('ReferencePositionVector2',saveFigPath)
+
     
 
     #%% Plot reference Trajectory Results

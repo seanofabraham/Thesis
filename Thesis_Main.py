@@ -398,3 +398,11 @@ def RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_mod
 
     return [coefficientDF, Error, covariance_A]
 
+def figText(text):
+
+    LaTeXText = '$\\text{' + text + ' }$'
+
+    return LaTeXText
+    
+    
+    

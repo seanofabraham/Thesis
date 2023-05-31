@@ -110,14 +110,14 @@ class PlotlyPlot:
     def plotSimple(self,df, x = None, y = None):
         
         if x == None and y == None:
-            fig = px.line(df)
-            fig.show()
+            self.fig = px.line(df)
+            self.fig.show()
         elif y == None:
-            fig = px.line(df, x = x)
-            fig.show()
+            self.fig = px.line(df, x = x)
+            self.fig.show()
         else:
-            fig = px.line(df, x = x, y = y)
-            fig.show()    
+            self.fig = px.line(df, x = x, y = y)
+            self.fig.show()    
             
         return
 
@@ -189,7 +189,85 @@ class PlotlyPlot:
     
     def write_image(self, figName, path):
         
-        self.fig.write_image(f"{path}/{figName}.svg")        
+        self.fig.write_image(f"{path}/{figName}.svg")  
+        
+    def addZoomSubPlot(self, zoom_x, zoom_y):
+        # zoom_x and zoom_y are the x and y coordinates of the new zoom window.
+        # zoom_x = [x1, x2]
+        # zoom_y = [y1, y2]
+        
+        #Initialize Subplot 
+        traces = self.fig.data #Take all traces from first figure
+        
+        self.fig = make_subplots(rows=1, cols=2)
+        
+        colorsG10 = ['#3366CC', '#DC3912', '#FF9900', '#109618', '#990099', '#0099C6', '#DD4477', '#66AA00', '#B82E2E', '#316395']
+        color_i = 0
+        # Add all traces back into both figures
+        
+        for trace in traces:
+            if trace.line != None:
+                trace.update(line=dict(color = colorsG10[color_i]))
+                self.fig.add_trace(trace, row=1, col=1)
+                self.fig.add_trace(trace, row=1, col=2)
+                self.fig.data[-1].showlegend = False
+                
+            if color_i <= len(colorsG10):   
+                color_i += 1
+            else: 
+                color_i = 0
+                
+        
+        # Update zoom of subplot
+        self.fig.update_xaxes(range=zoom_x, row=1, col=2)
+        self.fig.update_yaxes(range=zoom_y, row=1, col=2)
+        
+        # Add box around zoom area
+        self.addShadedBox(zoom_x, zoom_y, Row = 1, Col = 1)
+
+   
+    def addBox(self, box_x, box_y, Row=1, Col=1):
+
+        # Create the lines connecting the corners of the box to the corners of the second figure
+        box_trace = go.Scatter(
+            x=[box_x[0], box_x[0], box_x[1], box_x[1],box_x[0]],  # X coordinates for the lines
+            y=[box_y[0], box_y[1], box_y[1], box_y[0],box_y[0]], # Y coordinates for the lines
+            mode='lines',
+            line=dict(color='black', width=1),
+            name = 'Zoomed Area' # Customize the line color, width, and style
+        )
+        self.fig.add_trace(box_trace, row = Row, col = Col) # Add box trace to original figure.
+        
+    def addShadedBox(self, box_x, box_y, Row=1, Col=1):
+    
+        shape = go.layout.Shape(
+            type="rect",
+            xref="x",
+            yref="y",
+            x0=box_x[0],
+            y0=box_y[0],
+            x1=box_x[1],
+            y1=box_y[1],
+            fillcolor="lightgray",
+            opacity=0.7,
+            line=dict(color='black', width=1)
+            
+        )    
+        
+        self.fig.add_shape(shape)
+     
+    def addLine(self, line_x, line_y, Row=1, Col=1):
+        
+        
+        self.fig.add_shape(type="line",
+                      x0=line_x[0], y0=line_y[0], x1=line_x[1], y1=line_y[1],
+                      row=1, col=2,
+                      line=dict(color="red", width=2))    
+    
+    def zoom(self, zoom_x, zoom_y, Row = 1, Col = 1):
+        self.fig.update_xaxes(range=zoom_x, row=Row, col=Col)
+        self.fig.update_yaxes(range=zoom_y, row=Row, col=Col)
+    
     
     def show(self):
         self.fig.show()
