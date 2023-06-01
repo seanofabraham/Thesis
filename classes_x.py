@@ -88,19 +88,31 @@ class PlotlyPlot:
         self.template = 'simple_white'
         
     def setXaxisTitle(self,title):
-        self.x_axis = title
+        if title[0] != '$':
+            self.x_axis = self.figText(title)
+        else:        
+            self.x_axis = title
         return
     
     def setYaxisTitle(self,title):
-        self.y_axis = title
+        if title[0] != '$':
+            self.y_axis = self.figText(title)
+        else:        
+            self.y_axis = title
         return
     
     def setYaxis2Title(self,title):
-        self.y_axis_2 = title
+        if title[0] != '$':
+            self.y_axis_2 = self.figText(title)
+        else:        
+            self.y_axis_2 = title
         return
     
     def setTitle(self,title):
-        self.title = title
+        if title[0] != '$':
+            self.title = self.figText(title)
+        else:        
+            self.title = title
         return
     
     def settwoAxisChoice(self,twoAxisChoice):
@@ -158,7 +170,7 @@ class PlotlyPlot:
     def addScatter(self,df, df_x, secondary_y = None, Name = None, Mode = 'markers'):
         
         if Name == None:
-            name = df.columns.values[0]
+            Name = df.columns.values[0]
             
         if secondary_y != None:
             self.twoAxisChoice.append(secondary_y)
@@ -226,37 +238,43 @@ class PlotlyPlot:
         self.addShadedBox(zoom_x, zoom_y, Row = 1, Col = 1)
 
    
-    def addBox(self, box_x, box_y, Row=1, Col=1):
-
+    def addBox(self, box_x, box_y, Row=1, Col=1, scale_factor_x=1, scale_factor_y=1):
+        
+        box_X_scaled, box_Y_scaled = self.scale_rectangle(box_x, box_y, scale_factor_x,scale_factor_y)
+        
         # Create the lines connecting the corners of the box to the corners of the second figure
         box_trace = go.Scatter(
-            x=[box_x[0], box_x[0], box_x[1], box_x[1],box_x[0]],  # X coordinates for the lines
-            y=[box_y[0], box_y[1], box_y[1], box_y[0],box_y[0]], # Y coordinates for the lines
+            x=[box_X_scaled[0], box_X_scaled[0], box_X_scaled[1], box_X_scaled[1],box_X_scaled[0]],  # X coordinates for the lines
+            y=[box_Y_scaled[0], box_Y_scaled[1], box_Y_scaled[1], box_Y_scaled[0],box_Y_scaled[0]], # Y coordinates for the lines
             mode='lines',
             line=dict(color='black', width=1),
             name = 'Zoomed Area' # Customize the line color, width, and style
         )
         self.fig.add_trace(box_trace, row = Row, col = Col) # Add box trace to original figure.
         
-    def addShadedBox(self, box_x, box_y, Row=1, Col=1):
+    def addShadedBox(self, box_x, box_y, Row=1, Col=1, scale_factor_x=1, scale_factor_y=1):
     
+        box_X_scaled, box_Y_scaled = self.scale_rectangle(box_x, box_y, scale_factor_x,scale_factor_y)
+        
         shape = go.layout.Shape(
             type="rect",
             xref="x",
             yref="y",
-            x0=box_x[0],
-            y0=box_y[0],
-            x1=box_x[1],
-            y1=box_y[1],
-            fillcolor="lightgray",
-            opacity=0.7,
+            x0=box_X_scaled[0],
+            y0=box_Y_scaled[0],
+            x1=box_X_scaled[1],
+            y1=box_Y_scaled[1],
+            fillcolor="lightblue",
+            opacity=0.3,
             line=dict(color='black', width=1)
             
         )    
         
-        self.fig.add_shape(shape)
+        self.fig.add_shape(shape,layer='below')
+        
+        self.addBox(box_x,box_y, Row=Row, Col=Col, scale_factor_x=scale_factor_x, scale_factor_y=scale_factor_y)
      
-    def addLine(self, line_x, line_y, Row=1, Col=1):
+    def addLineShape(self, line_x, line_y, Row=1, Col=1):
         
         
         self.fig.add_shape(type="line",
@@ -272,3 +290,38 @@ class PlotlyPlot:
     def show(self):
         self.fig.show()
         return
+    
+    def figText(self, text):
+
+        LaTeXText = '$\\text{' + text + ' }$'
+
+        return LaTeXText
+    
+    def scale_rectangle(self, x_coords, y_coords, scale_factor_x, scale_factor_y):
+        x1 = x_coords[0]
+        x2 = x_coords[1]
+        y1 = y_coords[0]
+        y2 = y_coords[1]
+        
+        # Calculating the center of the rectangle
+        center_x = (x1 + x2) / 2
+        center_y = (y1 + y2) / 2
+    
+        # Calculating the width and height of the rectangle
+        width = abs(x2 - x1)
+        height = abs(y2 - y1)
+    
+        # Scaling up the rectangle
+        new_width = width * scale_factor_x
+        new_height = height * scale_factor_y
+    
+        # Calculating the new coordinates of the rectangle
+        new_x1 = center_x - new_width / 2
+        new_y1 = center_y - new_height / 2
+        new_x2 = center_x + new_width / 2
+        new_y2 = center_y + new_height / 2
+        
+        new_x_coords = [new_x1, new_x2]
+        new_y_coords = [new_y1, new_y2]
+    
+        return new_x_coords, new_y_coords   

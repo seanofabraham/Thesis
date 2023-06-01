@@ -21,15 +21,15 @@ generateNewTrajectory = False
 #Generate New RPV (with configuration parameters)
 generateNewRPV = False
 
-sigmaRPV = 0.001        # Meters
+sigmaRPV = 0        # Meters
 tauRPV =  0            # Time Lag Error (seconds)
 biasRPV = 0            # Bias error in RPV (meters)
 
 
 
 # Used to play around with coefficients
-changeDefaultCoeff = False
-CoeffDict = {'K_2': 5E-6}
+changeDefaultCoeff = True
+CoeffDict = {'K_1': 5E-6}
 
 # Used to determine how many coefficients to calculate
 
@@ -125,7 +125,7 @@ print(Results['Coeff: K_1-K_5'][4])
 
 #%% Plots scripts 
 """
-PLOTS
+PLOTS For THESIS
 
 
 """
@@ -147,13 +147,13 @@ saveFigPath = '/Users/seanabrahamson/Box/EE_Masters/Thesis/Thesis_Figures'
 
 if Plots == True: 
     
-#%% PLOTS for Thesis
-#%% Reference Trajectory
+    #%% PLOTS for Thesis
+    #%% Reference Trajectory
     refTrajectory_fig = PlotlyPlot()
     
     refTrajectory_fig.setTitle('$\\text{Reference Trajectory} $')
-    refTrajectory_fig.setYaxisTitle('$\\text{Acceleration } (ft/s^2)$')
-    refTrajectory_fig.setYaxis2Title('$\\text{Velocity } (ft/s)$')
+    refTrajectory_fig.setYaxisTitle('$\\text{Acceleration } (m/s^2)$')
+    refTrajectory_fig.setYaxis2Title('$\\text{Velocity } (m/s)$')
     refTrajectory_fig.setXaxisTitle('$\\text{Time (s)}$')
     refTrajectory_fig.settwoAxisChoice([False])
     refTrajectory_fig.plotTwoAxis(referenceTrajectory[['refAccel_x']], df_x = referenceTrajectory[['Time']], Name = '$\\text{Acceleration}$')
@@ -165,20 +165,20 @@ if Plots == True:
     
     refTrajectory_fig.write_image('ReferenceTrajectory',saveFigPath)
     
-#%% Reference Position Vector    
+    #%% Reference Position Vector    
     
     RPV_PlotvsTraj1 = PlotlyPlot()
     
-    RPV_PlotvsTraj1.setTitle(figText('Reference Position Vector'))
-    RPV_PlotvsTraj1.setYaxisTitle(figText('Distance (m)'))
-    RPV_PlotvsTraj1.setXaxisTitle(figText('Time (s)'))
+    RPV_PlotvsTraj1.setTitle('Reference Position Vector')
+    RPV_PlotvsTraj1.setYaxisTitle('Distance (m)')
+    RPV_PlotvsTraj1.setXaxisTitle('Time (s)')
     RPV_PlotvsTraj1.settwoAxisChoice([False, True])
     RPV_PlotvsTraj1.plotTwoAxis(referenceTrajectory[['refDist_x']], df_x = referenceTrajectory[['Time']], Name = 'Reference Trajectory')
     RPV_PlotvsTraj1.addScatter(trackRPV[['Interupters_DwnTrk_dist']], df_x = trackRPV[['Time']], Mode = 'markers', Name = 'Reference Position Vector')
     
     zoom_x = [17,20.5]
     zoom_y = [-40, 60]
-    RPV_PlotvsTraj1.addBox(zoom_x, zoom_y)
+    RPV_PlotvsTraj1.addBox(zoom_x, zoom_y, scale_factor_y = 1.8)
        
     RPV_PlotvsTraj1.update_template()
 
@@ -188,9 +188,9 @@ if Plots == True:
     
     RPV_PlotvsTraj2 = PlotlyPlot()
     
-    RPV_PlotvsTraj2.setTitle(figText('Reference Position Vector'))
-    RPV_PlotvsTraj2.setYaxisTitle(figText('Distance (m)'))
-    RPV_PlotvsTraj2.setXaxisTitle(figText('Time (s))'))
+    RPV_PlotvsTraj2.setTitle('Reference Position Vector')
+    RPV_PlotvsTraj2.setYaxisTitle('Distance (m)')
+    RPV_PlotvsTraj2.setXaxisTitle('Time (s)')
     RPV_PlotvsTraj2.settwoAxisChoice([False, True])
     RPV_PlotvsTraj2.plotTwoAxis(referenceTrajectory[['refDist_x']], df_x = referenceTrajectory[['Time']], Name = 'Reference Trajectory')
     RPV_PlotvsTraj2.addScatter(trackRPV[['Interupters_DwnTrk_dist']], df_x = trackRPV[['Time']], Mode = 'markers', Name = 'Reference Position Vector')
@@ -201,8 +201,141 @@ if Plots == True:
     RPV_PlotvsTraj2.show()
     RPV_PlotvsTraj2.write_image('ReferencePositionVector2',saveFigPath)
 
+    #%% Error Contributions
+    #%% Plot Distance Error as Caused by individual Error Coefficients
     
+    zoom_x = [18,77]
+    zoom_y = [-.05 ,.15]
+    
+    DistErrorCoeffs_fig = PlotlyPlot()
+    
+    DistErrorCoeffs_fig.setTitle('Distance Errors')
+    DistErrorCoeffs_fig.setXaxisTitle('Time (s)')
+    DistErrorCoeffs_fig.setYaxisTitle('Distance (m)')
+    DistErrorCoeffs_fig.setYaxis2Title('Distance (m)')
+    DistErrorCoeffs_fig.settwoAxisChoice([False, False])
+    init = True 
+    for key in Results:
+        Error = Results[key][0]
+        if init == True:
+            DistErrorCoeffs_fig.plotTwoAxis(-Error[['DistErr_x']], df_x = Error[['Time']], Name = key, mode = 'markers')
+            init = False
+        else:
+            DistErrorCoeffs_fig.addScatter(-Error[['DistErr_x']], df_x = Error[['Time']], secondary_y = False, Name = key[:-4])
+    
+    DistErrorCoeffs_fig.addShadedBox(zoom_x, zoom_y,scale_factor_y=1.7)
+    
+    DistErrorCoeffs_fig.update_template()    
+    DistErrorCoeffs_fig.show()
+    DistErrorCoeffs_fig.write_image('DistanceErrorAllCoefficients',saveFigPath)
+        
+    
+    DistErrorCoeffs_figZoom = PlotlyPlot()
+    
+    DistErrorCoeffs_figZoom.setTitle('Distance Errors')
+    DistErrorCoeffs_figZoom.setXaxisTitle('Time (s)')
+    DistErrorCoeffs_figZoom.setYaxisTitle('Distance (m)')
+    DistErrorCoeffs_figZoom.setYaxis2Title('Distance (m)')
+    DistErrorCoeffs_figZoom.settwoAxisChoice([False, False])
+    init = True 
+    for key in Results:
+        Error = Results[key][0]
+        if init == True:
+            DistErrorCoeffs_figZoom.plotTwoAxis(-Error[['DistErr_x']], df_x = Error[['Time']], Name = key, mode = 'markers')
+            init = False
+        else:
+            DistErrorCoeffs_figZoom.addScatter(-Error[['DistErr_x']], df_x = Error[['Time']], secondary_y = False, Name = key[:-4])
+    
+    DistErrorCoeffs_figZoom.update_template()    
+    DistErrorCoeffs_figZoom.zoom(zoom_x, zoom_y)
+    DistErrorCoeffs_figZoom.show()
+    DistErrorCoeffs_figZoom.write_image('DistanceErrorAllCoefficientsZoom',saveFigPath)
+    
+    #%% Plot Velocity Error as Caused by individual Error Coefficients
+        
+    zoom_x = [18,77]
+    zoom_y = [-.002 ,.004]
+    
+    VelErrorCoeffs_fig = PlotlyPlot()
+     
+    VelErrorCoeffs_fig.setTitle('Velocity Errors')
+    VelErrorCoeffs_fig.setXaxisTitle('Time (s)')
+    VelErrorCoeffs_fig.setYaxisTitle('Velocity (m/s)')
+    VelErrorCoeffs_fig.setYaxis2Title('Velocity (m/s)')
+    VelErrorCoeffs_fig.settwoAxisChoice([False, False])
+    init = True 
+    for key in Results:
+        Error = Results[key][0]
+        if init == True:
+            VelErrorCoeffs_fig.plotTwoAxis(-Error[['VelErr_x']], df_x = Error[['Time']], Name = key, mode = 'markers')
+            init = False
+        else:
+            VelErrorCoeffs_fig.addScatter(-Error[['VelErr_x']], df_x = Error[['Time']], secondary_y = False, Name = key[:-4])
+    
+    VelErrorCoeffs_fig.update_template()       
+    VelErrorCoeffs_fig.addShadedBox(zoom_x, zoom_y,scale_factor_y=1.7)
+    VelErrorCoeffs_fig.show()
+    VelErrorCoeffs_fig.write_image('VelocityErrorAllCoefficients',saveFigPath)
+    
+    
+    VelErrorCoeffs_figZoom = PlotlyPlot()
+    
+    VelErrorCoeffs_figZoom.setTitle('Velocity Errors')
+    VelErrorCoeffs_figZoom.setXaxisTitle('Time (s)')
+    VelErrorCoeffs_figZoom.setYaxisTitle('Velocity (m/s)')
+    VelErrorCoeffs_figZoom.setYaxis2Title('Velocity (m/s)')
+    VelErrorCoeffs_figZoom.settwoAxisChoice([False, False])
+    init = True 
+    for key in Results:
+        Error = Results[key][0]
+        if init == True:
+            VelErrorCoeffs_figZoom.plotTwoAxis(-Error[['VelErr_x']], df_x = Error[['Time']], Name = key, mode = 'markers')
+            init = False
+        else:
+            VelErrorCoeffs_figZoom.addScatter(-Error[['VelErr_x']], df_x = Error[['Time']], secondary_y = False, Name = key[:-4])
+    
+    VelErrorCoeffs_figZoom.update_template()     
+    VelErrorCoeffs_figZoom.zoom(zoom_x, zoom_y)
+    VelErrorCoeffs_figZoom.show()
+    VelErrorCoeffs_figZoom.write_image('VelocityErrorAllCoefficientsZoomed',saveFigPath)
 
+
+    #%% Plot Sensor Simulation vs the Reference Trajectory
+
+    sensorSimVTruth_fig = PlotlyPlot()
+    
+    sensorSimVTruth_fig.setTitle('Sensor Accelerometer sim and integrated velocity vs Truth')
+    sensorSimVTruth_fig.setYaxisTitle('Velocity (m/s)')
+    sensorSimVTruth_fig.setYaxis2Title('Distance (m)')
+    sensorSimVTruth_fig.settwoAxisChoice([False, True])
+    sensorSimVTruth_fig.plotTwoAxis(referenceTrajectory[['refAccel_x', 'refVel_x']], df_x = referenceTrajectory[['Time']], mode = 'markers')
+    sensorSimVTruth_fig.addScatter(sensorSim[['SensorSim_Ax']], df_x = sensorSim[['Time']],secondary_y=False)
+    sensorSimVTruth_fig.addScatter(sensorSim[['SensorSim_Vx']], df_x = sensorSim[['Time']],secondary_y=True)
+    sensorSimVTruth_fig.update_template() 
+    sensorSimVTruth_fig.show()
+
+    sensorSimVTruth_fig2 = PlotlyPlot()
+    
+    sensorSimVTruth_fig2.setTitle('Sensor integrated velocity sim and distance velocity vs referenceTrajectory')
+    sensorSimVTruth_fig2.setYaxisTitle('Velocity (m/s)')
+    sensorSimVTruth_fig2.setYaxis2Title('Distance (m)')
+    sensorSimVTruth_fig2.settwoAxisChoice([False, True])
+    sensorSimVTruth_fig2.plotTwoAxis(referenceTrajectory[['refVel_x','refDist_x']], df_x = referenceTrajectory[['Time']], mode = 'markers')
+    sensorSimVTruth_fig2.addScatter(sensorSim[['SensorSim_Vx']], df_x = sensorSim[['Time']],secondary_y=False)
+    sensorSimVTruth_fig2.addScatter(sensorSim[['SensorSim_Dx']], df_x = sensorSim[['Time']],secondary_y=True)
+    sensorSimVTruth_fig2.update_template() 
+    sensorSimVTruth_fig2.show()
+
+
+    #%% Other Plots    
+    '''
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    Other Plots     
+    Used for checking 
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    '''
     #%% Plot reference Trajectory Results
     refTrajectory_fig = PlotlyPlot()
     
@@ -287,10 +420,10 @@ if Plots == True:
     for key in Results:
         Error = Results[key][0]
         if init == True:
-            DistErrorCoeffs_fig.plotTwoAxis(Error[['DistErr_x']], df_x = Error[['Time']], name = key, mode = 'markers')
+            DistErrorCoeffs_fig.plotTwoAxis(Error[['DistErr_x']], df_x = Error[['Time']], Name = key, mode = 'markers')
             init = False
         else:
-            DistErrorCoeffs_fig.addScatter(Error[['DistErr_x']], df_x = Error[['Time']], secondary_y = False, name = key)
+            DistErrorCoeffs_fig.addScatter(Error[['DistErr_x']], df_x = Error[['Time']], secondary_y = False, Name = key)
         
     DistErrorCoeffs_fig.show()
     
@@ -305,10 +438,10 @@ if Plots == True:
     for key in Results:
         Error = Results[key][0]
         if init == True:
-            VelErrorCoeffs_fig.plotTwoAxis(Error[['VelErr_x']], df_x = Error[['Time']], name = key, mode = 'markers')
+            VelErrorCoeffs_fig.plotTwoAxis(Error[['VelErr_x']], df_x = Error[['Time']], Name = key, mode = 'markers')
             init = False
         else:
-            VelErrorCoeffs_fig.addScatter(Error[['VelErr_x']], df_x = Error[['Time']], secondary_y = False, name = key)
+            VelErrorCoeffs_fig.addScatter(Error[['VelErr_x']], df_x = Error[['Time']], secondary_y = False, Name = key)
         
     VelErrorCoeffs_fig.show()
     
