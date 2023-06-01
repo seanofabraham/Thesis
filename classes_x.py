@@ -13,11 +13,20 @@ class Accelerometer:
         
         self.AccelModelCoef = {'K_1': 0,                          # Scale Factor (g/g) NEEDS UPDATED
                                'K_0': 5            * 10**-6,      # Bias (g)
-                               'K_2': 60.14440651  * 10**-6,      # is second-order coefficient (g/g^2)
-                               'K_3': 0.0151975    * 10**-6,      # is third-order coefficient  (g/g^3)
-                               'K_4': 0.00578331   * 10**-6,      # is fourth-order coefficient (g/g^4)
-                               'K_5': 0.002277013  * 10**-6       # is fifth-order coefficient  (g/g^5)
+                               'K_2': 61.14        * 10**-6,      # is second-order coefficient (g/g^2)
+                               'K_3': 0.02         * 10**-6,      # is third-order coefficient  (g/g^3)
+                               'K_4': 0.006        * 10**-6,      # is fourth-order coefficient (g/g^4)
+                               'K_5': 0.0023       * 10**-6       # is fifth-order coefficient  (g/g^5)
                                }
+        
+        # self.AccelModelCoef = {'K_1': 0,                          # Scale Factor (g/g) NEEDS UPDATED
+                               # 'K_0': 5            * 10**-6,      # Bias (g)
+                               # 'K_2': 60.14440651  * 10**-6,      # is second-order coefficient (g/g^2)
+                               # 'K_3': 0.0151975    * 10**-6,      # is third-order coefficient  (g/g^3)
+                               # 'K_4': 0.00578331   * 10**-6,      # is fourth-order coefficient (g/g^4)
+                               # 'K_5': 0.002277013  * 10**-6       # is fifth-order coefficient  (g/g^5)
+                               # }
+        
         
         # self.K_1 = 1                          
         # self.K_0 = 0                          
@@ -133,7 +142,7 @@ class PlotlyPlot:
             
         return
 
-    def plotTwoAxis(self, df, df_x, mode = 'lines', Name = None):
+    def plotTwoAxis(self, df, df_x, mode = 'lines', Name = None, Opacity = 1, Size = None):
         
         #df is a dataframe
         #LeftRight is a list of booleans that determine which y data gets plotted on second axis
@@ -147,14 +156,18 @@ class PlotlyPlot:
             # Add Traces
             if Name != None: 
                 self.fig.add_trace(
-                    go.Scatter(x = df_x.iloc[:,0], y = df[col], name = Name, mode = mode),
+                    go.Scatter(x = df_x.iloc[:,0], y = df[col], name = Name, mode = mode,  opacity = Opacity),
                     secondary_y = self.twoAxisChoice[count],)
             else:
                 self.fig.add_trace(
-                    go.Scatter(x = df_x.iloc[:,0], y = df[col], name = col, mode = mode),
+                    go.Scatter(x = df_x.iloc[:,0], y = df[col], name = col, mode = mode,  opacity = Opacity),
                     secondary_y = self.twoAxisChoice[count],)
             
             count += 1
+        
+        #Change size of markers
+        if Size != None:
+            self.update_marker_size(Size)
             
         # Add Title 
         self.fig.update_layout(
@@ -167,26 +180,30 @@ class PlotlyPlot:
 
         return
     
-    def addScatter(self,df, df_x, secondary_y = None, Name = None, Mode = 'markers'):
+    def addScatter(self,df, df_x, secondary_y = None, Name = None, Mode = 'markers', Opacity = 1, Size = None):
         
         if Name == None:
             Name = df.columns.values[0]
             
         if secondary_y != None:
             self.twoAxisChoice.append(secondary_y)
-            self.fig.add_trace(go.Scatter(x = df_x.iloc[:,0],y = df.iloc[:,0], name = Name, mode = Mode),secondary_y = secondary_y)
+            self.fig.add_trace(go.Scatter(x = df_x.iloc[:,0],y = df.iloc[:,0], name = Name, mode = Mode, opacity = Opacity),secondary_y = secondary_y)
         else:
-            self.fig.add_trace(go.Scatter(x = df_x.iloc[:,0],y = df.iloc[:,0], name = Name, mode = Mode))
+            self.fig.add_trace(go.Scatter(x = df_x.iloc[:,0],y = df.iloc[:,0], name = Name, mode = Mode, opacity=Opacity))
+            
+        #Change size of markers
+        if Size != None:
+            self.update_marker_size(Size)
     
-    def addLine(self,df, df_x, secondary_y = None, Name = None):
+    def addLine(self,df, df_x, secondary_y = None, Name = None, Opacity = 1):
         
         name = df.columns.values[0]
         
         if secondary_y != None:
             self.twoAxisChoice.append(secondary_y)
-            self.fig.add_trace(go.Scatter(x = df_x.iloc[:,0],y = df.iloc[:,0], name = Name),secondary_y = secondary_y)
+            self.fig.add_trace(go.Scatter(x = df_x.iloc[:,0],y = df.iloc[:,0], name = Name, opacity = Opacity),secondary_y = secondary_y)
         else:
-            self.fig.add_trace(go.Scatter(x = df_x.iloc[:,0],y = df.iloc[:,0], name = Name))
+            self.fig.add_trace(go.Scatter(x = df_x.iloc[:,0],y = df.iloc[:,0], name = Name, opacity = Opacity))
     
     def legendTopRight(self):
         self.fig.update_layout(legend=dict(
@@ -203,7 +220,7 @@ class PlotlyPlot:
         
         self.fig.write_image(f"{path}/{figName}.svg")  
         
-    def addZoomSubPlot(self, zoom_x, zoom_y):
+    def addZoomSubPlot(self, zoom_x, zoom_y, Opacity=1):
         # zoom_x and zoom_y are the x and y coordinates of the new zoom window.
         # zoom_x = [x1, x2]
         # zoom_y = [y1, y2]
@@ -219,7 +236,7 @@ class PlotlyPlot:
         
         for trace in traces:
             if trace.line != None:
-                trace.update(line=dict(color = colorsG10[color_i]))
+                trace.update(opacity=Opacity, line=dict(color = colorsG10[color_i]))
                 self.fig.add_trace(trace, row=1, col=1)
                 self.fig.add_trace(trace, row=1, col=2)
                 self.fig.data[-1].showlegend = False
@@ -296,6 +313,21 @@ class PlotlyPlot:
         LaTeXText = '$\\text{' + text + ' }$'
 
         return LaTeXText
+    
+    def update_marker_size(self, Size):
+        
+        #Get traces from Figure
+        traces = self.fig.data
+        import plotly.graph_objects as go
+
+    def update_marker_size(self, marker_size):
+  
+        for data in self.fig.data:
+            if 'marker' in data:
+                data.marker.size = marker_size
+                
+        # self.fig.update_layout(legend= {'itemsizing': 'constant'})
+       
     
     def scale_rectangle(self, x_coords, y_coords, scale_factor_x, scale_factor_y):
         x1 = x_coords[0]

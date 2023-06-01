@@ -125,12 +125,16 @@ print(Results['Coeff: K_1-K_5'][4])
 
 #%% Plots scripts 
 """
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 PLOTS For THESIS
 
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 """
 #Choose a Path to save figures to
-saveFigPath = '/Users/seanabrahamson/Box/EE_Masters/Thesis/Thesis_Figures'
+# saveFigPath = '/Users/seanabrahamson/Box/EE_Masters/Thesis/Thesis_Figures' # Imac path
+saveFigPath = '/Users/seanabrahamson/Library/CloudStorage/Box-Box/EE_Masters/Thesis/Thesis_Figures' #MacBook Pro Path
 
 # Choose which results you want to look at:
 N_model[0] = 0
@@ -142,8 +146,6 @@ sensorSim = Results[f"Coeff: {ModelDict[str(N_model[0])]}-{ModelDict[str(N_model
     
 #%%
 Plots = False
-
-saveFigPath = '/Users/seanabrahamson/Box/EE_Masters/Thesis/Thesis_Figures'
 
 if Plots == True: 
     
@@ -174,11 +176,11 @@ if Plots == True:
     RPV_PlotvsTraj1.setXaxisTitle('Time (s)')
     RPV_PlotvsTraj1.settwoAxisChoice([False, True])
     RPV_PlotvsTraj1.plotTwoAxis(referenceTrajectory[['refDist_x']], df_x = referenceTrajectory[['Time']], Name = 'Reference Trajectory')
-    RPV_PlotvsTraj1.addScatter(trackRPV[['Interupters_DwnTrk_dist']], df_x = trackRPV[['Time']], Mode = 'markers', Name = 'Reference Position Vector')
+    RPV_PlotvsTraj1.addScatter(trackRPV[['Interupters_DwnTrk_dist']], df_x = trackRPV[['Time']], Mode = 'markers', Name = 'Reference Position Vector', Opacity = .7)
     
     zoom_x = [17,20.5]
     zoom_y = [-40, 60]
-    RPV_PlotvsTraj1.addBox(zoom_x, zoom_y, scale_factor_y = 1.8)
+    RPV_PlotvsTraj1.addShadedBox(zoom_x, zoom_y, scale_factor_y = 1.8)
        
     RPV_PlotvsTraj1.update_template()
 
@@ -193,7 +195,7 @@ if Plots == True:
     RPV_PlotvsTraj2.setXaxisTitle('Time (s)')
     RPV_PlotvsTraj2.settwoAxisChoice([False, True])
     RPV_PlotvsTraj2.plotTwoAxis(referenceTrajectory[['refDist_x']], df_x = referenceTrajectory[['Time']], Name = 'Reference Trajectory')
-    RPV_PlotvsTraj2.addScatter(trackRPV[['Interupters_DwnTrk_dist']], df_x = trackRPV[['Time']], Mode = 'markers', Name = 'Reference Position Vector')
+    RPV_PlotvsTraj2.addScatter(trackRPV[['Interupters_DwnTrk_dist']], df_x = trackRPV[['Time']], Mode = 'markers', Name = 'Reference Position Vector', Opacity = .8)
     
     RPV_PlotvsTraj2.zoom(zoom_x, zoom_y)
        
@@ -218,10 +220,10 @@ if Plots == True:
     for key in Results:
         Error = Results[key][0]
         if init == True:
-            DistErrorCoeffs_fig.plotTwoAxis(-Error[['DistErr_x']], df_x = Error[['Time']], Name = key, mode = 'markers')
+            DistErrorCoeffs_fig.plotTwoAxis(-Error[['DistErr_x']], df_x = Error[['Time']], Name = key, mode = 'markers', Opacity = .7, Size = 4)
             init = False
         else:
-            DistErrorCoeffs_fig.addScatter(-Error[['DistErr_x']], df_x = Error[['Time']], secondary_y = False, Name = key[:-4])
+            DistErrorCoeffs_fig.addScatter(-Error[['DistErr_x']], df_x = Error[['Time']], secondary_y = False, Name = key[:-4], Opacity = .7, Size = 4)
     
     DistErrorCoeffs_fig.addShadedBox(zoom_x, zoom_y,scale_factor_y=1.7)
     
@@ -241,10 +243,10 @@ if Plots == True:
     for key in Results:
         Error = Results[key][0]
         if init == True:
-            DistErrorCoeffs_figZoom.plotTwoAxis(-Error[['DistErr_x']], df_x = Error[['Time']], Name = key, mode = 'markers')
+            DistErrorCoeffs_figZoom.plotTwoAxis(-Error[['DistErr_x']], df_x = Error[['Time']], Name = key, mode = 'markers', Opacity = .9, Size = 4)
             init = False
         else:
-            DistErrorCoeffs_figZoom.addScatter(-Error[['DistErr_x']], df_x = Error[['Time']], secondary_y = False, Name = key[:-4])
+            DistErrorCoeffs_figZoom.addScatter(-Error[['DistErr_x']], df_x = Error[['Time']], secondary_y = False, Name = key[:-4],Opacity = .9, Size = 4)
     
     DistErrorCoeffs_figZoom.update_template()    
     DistErrorCoeffs_figZoom.zoom(zoom_x, zoom_y)
