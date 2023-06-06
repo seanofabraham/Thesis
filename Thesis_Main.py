@@ -18,7 +18,7 @@ from scipy import integrate
 import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
-
+from sigfig import round
 
 def importEGIData(Headers):
     
@@ -337,10 +337,15 @@ def RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_mod
     trimmed_A_filt[0] = 1
     
     trimmed_A_filt[N_model[0]+1:N_model[1]+1] = 1
-    
+
     trimmed_A = complete_A[:,trimmed_A_filt]
     
-    covariance_A = np.cov(trimmed_A, rowvar = False)
+    
+    
+    # Compute Covariance
+    # cov_y = 
+    
+    covariance_A = np.linalg.inv(np.matmul(np.transpose(trimmed_A),trimmed_A))
     
     # Linear Regression
     coeff_list = tuple(None for _ in range(trimmed_A.shape[1]))
@@ -403,6 +408,16 @@ def figText(text):
     LaTeXText = '$\\text{' + text + ' }$'
 
     return LaTeXText
+
+def round_array_to_sigfigs(array, sigfigs):
+    rounded_array = np.zeros_like(array)  # Create an array of zeros with the same shape as the input array
     
+    for i in range(array.shape[0]):
+        for j in range(array.shape[1]):
+            if array[i, j] == 0:
+                rounded_array[i, j] = 0
+            else:
+                rounded_array[i, j] = round(array[i, j], sigfigs-1-int(np.floor(np.log10(np.abs(array[i, j])))))  # Calculate the number of decimals based on significant figures
     
+    return rounded_array
     

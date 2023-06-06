@@ -8,6 +8,8 @@ Created on Fri Mar  3 12:46:04 2023
 
 from Thesis_Main import *
 import os.path
+import pandas as pd
+
 # from Thesis_Utils import *
 
 #%% Initial Configuration Parameters
@@ -85,7 +87,6 @@ trackRPV = pd.read_pickle(f"./RPVs/trackRPV_sig{sigmaRPV}_tau{tauRPV}_bias{biasR
 
 sensorSim, AccelObj = AccelSim(referenceTrajectory, N_model, changeDefaultCoeff, CoeffDict, g)
 
-
 #%% Perform Regression Analysis for full model
 
 coefficientDF, Error, cov_A = RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_model, g)
@@ -121,7 +122,12 @@ for key in Results:
     print(Results[key][3])
     print('\n')
    
+    
 print(Results['Coeff: K_1-K_5'][4])    
+
+df = pd.DataFrame(Results['Coeff: K_1-K_5'][4]).T
+df.to_excel(excel_writer = "/Users/seanabrahamson/Library/CloudStorage/Box-Box/EE_Masters/Thesis/Results.xlsx")
+
 
 #%% Plots scripts 
 """
@@ -153,15 +159,16 @@ if Plots == True:
     #%% Reference Trajectory
     refTrajectory_fig = PlotlyPlot()
     
-    refTrajectory_fig.setTitle('$\\text{Reference Trajectory} $')
-    refTrajectory_fig.setYaxisTitle('$\\text{Acceleration } (m/s^2)$')
-    refTrajectory_fig.setYaxis2Title('$\\text{Velocity } (m/s)$')
-    refTrajectory_fig.setXaxisTitle('$\\text{Time (s)}$')
+    # refTrajectory_fig.setTitle('Reference Trajectory')
+    refTrajectory_fig.setYaxisTitle('Acceleration (m/s<sup>2</sup>)')
+    refTrajectory_fig.setYaxis2Title('Velocity (m/s)')
+    refTrajectory_fig.setXaxisTitle('Time (s)')
     refTrajectory_fig.settwoAxisChoice([False])
     refTrajectory_fig.plotTwoAxis(referenceTrajectory[['refAccel_x']], df_x = referenceTrajectory[['Time']], Name = '$\\text{Acceleration}$')
     refTrajectory_fig.addLine(referenceTrajectory[['refVel_x']], df_x = referenceTrajectory[['Time']], Name = '$\\text{Velocity}$', secondary_y=True, )
     refTrajectory_fig.legendTopRight()    
     refTrajectory_fig.update_template()
+    # refTrajectory_fig.update_legend()
     refTrajectory_fig.show()
 
     

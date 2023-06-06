@@ -97,32 +97,41 @@ class PlotlyPlot:
         self.template = 'simple_white'
         
     def setXaxisTitle(self,title):
-        if title[0] != '$':
-            self.x_axis = self.figText(title)
-        else:        
-            self.x_axis = title
-        return
+        # if title[0] != '$':
+        #     self.x_axis = self.figText(title)
+        # else:        
+        #     self.x_axis = title
+        # return
+    
+        self.x_axis = title
     
     def setYaxisTitle(self,title):
-        if title[0] != '$':
-            self.y_axis = self.figText(title)
-        else:        
-            self.y_axis = title
-        return
+        # if title[0] != '$':
+        #     self.y_axis = self.figText(title)
+        # else:        
+        #     self.y_axis = title
+        # return
+    
+        self.y_axis = title
     
     def setYaxis2Title(self,title):
-        if title[0] != '$':
-            self.y_axis_2 = self.figText(title)
-        else:        
-            self.y_axis_2 = title
-        return
+        # if title[0] != '$':
+        #     self.y_axis_2 = self.figText(title)
+        # else:        
+        #     self.y_axis_2 = title
+        # return
+    
+        self.y_axis_2 = title
+    
     
     def setTitle(self,title):
-        if title[0] != '$':
-            self.title = self.figText(title)
-        else:        
-            self.title = title
-        return
+        # if title[0] != '$':
+        #     self.title = self.figText(title)
+        # else:        
+        #     self.title = title
+        # return
+    
+        self.title = title
     
     def settwoAxisChoice(self,twoAxisChoice):
         self.twoAxisChoice = twoAxisChoice
@@ -205,7 +214,7 @@ class PlotlyPlot:
         else:
             self.fig.add_trace(go.Scatter(x = df_x.iloc[:,0],y = df.iloc[:,0], name = Name, opacity = Opacity))
     
-    def legendTopRight(self):
+    def legendTopLeft(self):
         self.fig.update_layout(legend=dict(
             yanchor="top",
             y=0.99,
@@ -213,12 +222,27 @@ class PlotlyPlot:
             x=0.01
             ))
         
+    def legendTopRight(self):
+        self.fig.update_layout(
+            legend=dict(
+                x=.9,
+                y=1,
+                xanchor='right',
+                yanchor='top'
+            ))
+        
     def update_template(self, Template = 'simple_white'):
         self.fig.update_layout(template = Template)
+        self.fig.update_layout(font=dict(family="Serif"))
+        
+    def update_legend(self):
+        self.fig.update_layout(legend=dict(font=dict(family = 'Arial')))
+
     
     def write_image(self, figName, path):
-        
-        self.fig.write_image(f"{path}/{figName}.svg")  
+        scale_factor = 1.2
+        self.fig.write_image(f"{path}/{figName}.pdf", width = 600*scale_factor, height = 400*scale_factor)  
+        self.fig.write_image(f"{path}/{figName}.png", width = 600*scale_factor, height = 400*scale_factor, scale=5)
         
     def addZoomSubPlot(self, zoom_x, zoom_y, Opacity=1):
         # zoom_x and zoom_y are the x and y coordinates of the new zoom window.
