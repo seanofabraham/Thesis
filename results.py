@@ -21,12 +21,11 @@ g = 9.791807
 generateNewTrajectory = False
 
 #Generate New RPV (with configuration parameters)
-generateNewRPV = False
+generateNewRPV = True
 
-sigmaRPV = 0        # Meters
+sigmaRPV = 0.006        # Meters (.006 is about a quarter of an inch)
 tauRPV =  0            # Time Lag Error (seconds)
 biasRPV = 0            # Bias error in RPV (meters)
-
 
 
 # Used to play around with coefficients
@@ -80,7 +79,22 @@ if generateNewRPV == False:
 if generateNewRPV == True:    
     generateTrackRPV(referenceTrajectory, sigmaRPV, tauRPV, biasRPV)
 
-trackRPV = pd.read_pickle(f"./RPVs/trackRPV_sig{sigmaRPV}_tau{tauRPV}_bias{biasRPV}.pkl") 
+trackRPV = pd.read_pickle(f"./RPVs/trackRPV_sig{sigmaRPV}_tau{tauRPV}_bias{biasRPV}.pkl")
+
+#%%
+# Analyze effects of measurement uncertainty 
+trackPureRPV = pd.read_pickle(f"./RPVs/trackRPV_sig0_tau0_bias0.pkl")
+
+UCert = pd.DataFrame()
+
+RPV_Derr = trackRPV['Interupters_DwnTrk_dist'] - trackPureRPV['Interupters_DwnTrk_dist']
+
+RPV_Ve = np.diff(RPV_Derr)/np.diff(trackPureRPV['Time'])
+RPV_Ve_t = (trackRPV['Time'].head(-1) + np.diff(trackRPV['Time'])/2).to_numpy() # UPDATE TIME TAG FOR DIFFERENTIATION.
+
+UCert['Time'] = RPV_Ve_t
+UCert['DistErr_x'] = np.interp(RPV_Ve_t,trackRPV['Time'],RPV_Derr) 
+UCert['VelErr_x'] = RPV_Ve
 
 
 #%% Generate Simulated Accelerometer for full model
@@ -336,12 +350,47 @@ if Plots == True:
     sensorSimVTruth_fig2.show()
 
 
+    #%% Uncertainty in RPV plots
+    RPV_UncertPlot1 = PlotlyPlot()
+    
+    RPV_UncertPlot1.setTitle('Reference Position Vector Error')
+    RPV_UncertPlot1.setYaxisTitle('Distance (m)')
+    RPV_UncertPlot1.setYaxis2Title('Distance (m)')
+    RPV_UncertPlot1.setXaxisTitle('Time (s)')
+    RPV_UncertPlot1.settwoAxisChoice([False, True])
+    RPV_UncertPlot1.plotTwoAxis(UCert[['DistErr_x']], df_x = UCert[['Time']], Name = 'Distance Error', Mode = 'markers')
+    RPV_UncertPlot1.addScatter(referenceTrajectory[['refDist_x']], df_x = referenceTrajectory[['Time']], Mode = 'markers', Name = 'Ref Trajectory Velocity',secondary_y = True)
+     
+    RPV_UncertPlot1.update_template()
+
+    RPV_UncertPlot1.show()
+    # RPV_PlotvsTraj1.write_image('ReferencePositionVector1',saveFigPath)
+     
+    
+    RPV_UncertPlot2 = PlotlyPlot()
+    
+    RPV_UncertPlot2.setTitle('Reference Position Vector Error')
+    RPV_UncertPlot2.setYaxisTitle('Velocity Error (m/s)')
+    RPV_UncertPlot2.setYaxis2Title('Velocity (m/s)')
+    RPV_UncertPlot2.setXaxisTitle('Time (s)')
+    RPV_UncertPlot2.settwoAxisChoice([False, True])
+    RPV_UncertPlot2.plotTwoAxis(UCert[['VelErr_x']], df_x = UCert[['Time']], Name = 'Velocity Error', Mode = 'markers')
+    RPV_UncertPlot2.addScatter(referenceTrajectory[['refVel_x']], df_x = referenceTrajectory[['Time']], Mode = 'markers', Name = 'Ref Trajectory Velocity',secondary_y = True)
+   
+    
+    RPV_UncertPlot2.update_template()
+
+    RPV_UncertPlot2.show()
+    # RPV_PlotvsTraj1.write_image('ReferencePositionVector1',saveFigPath)
+    
+    
+
     #%% Other Plots    
     '''
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     Other Plots     
-    Used for checking 
+    Used for developing code originally.
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     '''

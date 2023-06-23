@@ -151,7 +151,7 @@ class PlotlyPlot:
             
         return
 
-    def plotTwoAxis(self, df, df_x, mode = 'lines', Name = None, Opacity = 1, Size = None):
+    def plotTwoAxis(self, df, df_x, Mode = 'lines', Name = None, Opacity = 1, Size = None):
         
         #df is a dataframe
         #LeftRight is a list of booleans that determine which y data gets plotted on second axis
@@ -165,11 +165,11 @@ class PlotlyPlot:
             # Add Traces
             if Name != None: 
                 self.fig.add_trace(
-                    go.Scatter(x = df_x.iloc[:,0], y = df[col], name = Name, mode = mode,  opacity = Opacity),
+                    go.Scatter(x = df_x.iloc[:,0], y = df[col], name = Name, mode = Mode,  opacity = Opacity),
                     secondary_y = self.twoAxisChoice[count],)
             else:
                 self.fig.add_trace(
-                    go.Scatter(x = df_x.iloc[:,0], y = df[col], name = col, mode = mode,  opacity = Opacity),
+                    go.Scatter(x = df_x.iloc[:,0], y = df[col], name = col, mode = Mode,  opacity = Opacity),
                     secondary_y = self.twoAxisChoice[count],)
             
             count += 1

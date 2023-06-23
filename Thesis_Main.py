@@ -279,9 +279,9 @@ def RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_mod
 
     # Interpolate Sensor Sim to Track
     
-    trackRPV['SensorInterpDist'] = np.interp(trackRPV['Time'],sensorSim['Time'],sensorSim['SensorSim_Dx'])
+    trackRPV['SensorDwnTrkDist'] = np.interp(trackRPV['Time'],sensorSim['Time'],sensorSim['SensorSim_Dx'])
     
-    Dist_Error['DistErr_x'] = trackRPV['Interupters_DwnTrk_dist'] - trackRPV['SensorInterpDist']
+    Dist_Error['DistErr_x'] = trackRPV['Interupters_DwnTrk_dist'] - trackRPV['SensorDwnTrkDist']
     
     # Compute Velocity Error
     Ve_x = np.diff(Dist_Error['DistErr_x'])/np.diff(Dist_Error['Time'])
