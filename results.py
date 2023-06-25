@@ -140,7 +140,7 @@ for key in Results:
 print(Results['Coeff: K_1-K_5'][4])    
 
 df = pd.DataFrame(Results['Coeff: K_1-K_5'][4]).T
-df.to_excel(excel_writer = "/Users/seanabrahamson/Library/CloudStorage/Box-Box/EE_Masters/Thesis/Results.xlsx")
+# df.to_excel(excel_writer = "/Users/seanabrahamson/Library/CloudStorage/Box-Box/EE_Masters/Thesis/Results.xlsx")
 
 
 #%% Plots scripts 

@@ -345,7 +345,7 @@ def RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_mod
     # Compute Covariance
     # cov_y = 
     
-    covariance_A = np.linalg.inv(np.matmul(np.transpose(trimmed_A),trimmed_A))
+    covariance_A = np.linalg.inv(np.matmul(np.transpose(trimmed_A),trimmed_A)) # Htrans * cov(y) * transpose of first part
     
     # Linear Regression
     coeff_list = tuple(None for _ in range(trimmed_A.shape[1]))
