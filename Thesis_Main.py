@@ -328,7 +328,7 @@ def RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_mod
     coeff_dict = {'Est_V_0': 0, 'Est_K_1': 0, 'Est_K_0': 0, 'Est_K_2': 0, 'Est_K_3': 0, 'Est_K_4': 0, 'Est_K_5': 0}
     
     # Create Complete A Matrix
-    complete_A = np.array([np.ones(len(Ve_t)), Vx, -Ve_t, intAx_2, intAx_3, intAx_4, intAx_5])
+    complete_A = np.array([np.ones(len(Ve_t))/g, -Vx/g, -Ve_t, intAx_2, intAx_3, intAx_4, intAx_5])
     complete_A = complete_A.T
     
     complete_A_DF = pd.DataFrame(np.fliplr(complete_A), columns=['IntAx_5', 'IntAx_4', 'IntAx_3', 'IntAx_2', 'Ve_t', 'Vx', 'Ones'])
@@ -339,7 +339,6 @@ def RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_mod
     trimmed_A_filt[N_model[0]+1:N_model[1]+1] = 1
 
     trimmed_A = complete_A[:,trimmed_A_filt]
-    
     
     
     # Compute Covariance

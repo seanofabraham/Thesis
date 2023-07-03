@@ -23,7 +23,7 @@ generateNewTrajectory = False
 #Generate New RPV (with configuration parameters)
 generateNewRPV = True
 
-sigmaRPV = 0.006        # Meters (.006 is about a quarter of an inch)
+sigmaRPV = 0       # Meters (.006 is about a quarter of an inch)
 tauRPV =  0            # Time Lag Error (seconds)
 biasRPV = 0            # Bias error in RPV (meters)
 
@@ -186,7 +186,7 @@ if Plots == True:
     refTrajectory_fig.show()
 
     
-    refTrajectory_fig.write_image('ReferenceTrajectory',saveFigPath)
+    refTrajectory_fig.write_image('ReferenceTrajectory.png',saveFigPath)
     
     #%% Reference Position Vector    
     
@@ -512,7 +512,7 @@ if Plots == True:
     distVelError_fig.setYaxisTitle('Distance (m)')
     distVelError_fig.setYaxis2Title('Velocity (m/s)')
     distVelError_fig.settwoAxisChoice([False, True])
-    distVelError_fig.plotTwoAxis(Error[['DistErr_x']], df_x = Error[['Time']], mode = 'markers')
+    distVelError_fig.plotTwoAxis(Error[['DistErr_x']], df_x = Error[['Time']], Mode = 'markers')
     # distVelError_fig.addScatter(trackRPV[['Interupters_DwnTrk_dist']], df_x = trackRPV[['Time']], secondary_y = False)
     # distVelError_fig.addScatter(trackRPV[['SensorInterpDist']], df_x = trackRPV[['Time']], secondary_y = False)
     distVelError_fig.addScatter(Error[['VelErr_x']], df_x = Error[['Time']], secondary_y = True)
