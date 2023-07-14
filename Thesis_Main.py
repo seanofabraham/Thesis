@@ -19,6 +19,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 from sigfig import round
+import os
 
 def importEGIData(Headers):
     
@@ -160,7 +161,7 @@ def generateReferenceTrajectory(plotcheck = False):
 
 #%% Generate Track RPV Function 
 
-def generateTrackRPV(referenceTrajectory, sigmaRPV, tauRPV, biasRPV):
+def generateTrackRPV(referenceTrajectory, sigmaRPV, tauRPV, biasRPV, Overwrite=True):
     
     print("\n Generating RPV")
     trackRPV = pd.DataFrame()
@@ -226,8 +227,11 @@ def generateTrackRPV(referenceTrajectory, sigmaRPV, tauRPV, biasRPV):
 
 
     #%% Save track RPV to pickle file
-    trackRPV.to_pickle(f"./RPVs/trackRPV_sig{sigmaRPV}_tau{tauRPV}_bias{biasRPV}.pkl")
-
+    if Overwrite == True:
+        trackRPV.to_pickle(f"./RPVs/trackRPV_sig{sigmaRPV}_tau{tauRPV}_bias{biasRPV}.pkl")
+    else:
+       filepath = incrementFileName(f"./VarianceRPVs/trackRPV_sig{sigmaRPV}_tau{tauRPV}_bias{biasRPV}.pkl")
+       trackRPV.to_pickle(filepath)
     return
 
 
@@ -419,4 +423,26 @@ def round_array_to_sigfigs(array, sigfigs):
                 rounded_array[i, j] = round(array[i, j], sigfigs-1-int(np.floor(np.log10(np.abs(array[i, j])))))  # Calculate the number of decimals based on significant figures
     
     return rounded_array
+
+
+def incrementFileName(base_path):
+    
+    # initialize the increment variable
+    increment = 0
+    
+    # loop until we find a file name that doesn't exist
+
+    while True:
+        # create the file path with the increment
+        file_path = f"{os.path.splitext(base_path)[0]}_{increment}{os.path.splitext(base_path)[1]}"
+    
+        # check if the file exists
+        if os.path.isfile(file_path):
+            # if it does, increment the counter and try again
+            increment += 1
+        else:
+            # if it doesn't, break out of the loop
+            break
+
+    return file_path
     

@@ -23,7 +23,7 @@ generateNewTrajectory = False
 #Generate New RPV (with configuration parameters)
 generateNewRPV = True
 
-sigmaRPV = 0       # Meters (.006 is about a quarter of an inch)
+sigmaRPV = 0.006           # Meters (.006 is about a quarter of an inch)
 tauRPV =  0            # Time Lag Error (seconds)
 biasRPV = 0            # Bias error in RPV (meters)
 
