@@ -9,7 +9,7 @@ Created on Fri Mar  3 12:46:04 2023
 from Thesis_Main import *
 import os.path
 import pandas as pd
-
+import numpy as np 
 # from Thesis_Utils import *
 
 #%% Initial Configuration Parameters
@@ -21,16 +21,19 @@ g = 9.791807
 generateNewTrajectory = False
 
 #Generate New RPV (with configuration parameters)
-generateNewRPV = True
+generateNewRPV = False
 
-sigmaRPV = 0.006           # Meters (.006 is about a quarter of an inch)
+sigmaRPV = 0.006        # Meters (.006 is about a quarter of an inch)
 tauRPV =  0            # Time Lag Error (seconds)
 biasRPV = 0            # Bias error in RPV (meters)
 
+# Use Weighted Least Squares
+WLS = True
 
 # Used to play around with coefficients
-changeDefaultCoeff = True
+changeDefaultCoeff = False
 CoeffDict = {'K_1': 5E-6}
+             #K_5': 7E-3}
 
 # Used to determine how many coefficients to calculate
 
@@ -56,7 +59,6 @@ N_model[1]= N_model_end + 1
 individualCoeffAnalysis = True
 
              
-
 #%% Generate or import trajectory
 """
 Generates or creates reference trajectory from EGI data. 
@@ -80,21 +82,7 @@ if generateNewRPV == True:
     generateTrackRPV(referenceTrajectory, sigmaRPV, tauRPV, biasRPV)
 
 trackRPV = pd.read_pickle(f"./RPVs/trackRPV_sig{sigmaRPV}_tau{tauRPV}_bias{biasRPV}.pkl")
-
-#%%
-# Analyze effects of measurement uncertainty 
-trackPureRPV = pd.read_pickle(f"./RPVs/trackRPV_sig0_tau0_bias0.pkl")
-
-UCert = pd.DataFrame()
-
-RPV_Derr = trackRPV['Interupters_DwnTrk_dist'] - trackPureRPV['Interupters_DwnTrk_dist']
-
-RPV_Ve = np.diff(RPV_Derr)/np.diff(trackPureRPV['Time'])
-RPV_Ve_t = (trackRPV['Time'].head(-1) + np.diff(trackRPV['Time'])/2).to_numpy() # UPDATE TIME TAG FOR DIFFERENTIATION.
-
-UCert['Time'] = RPV_Ve_t
-UCert['DistErr_x'] = np.interp(RPV_Ve_t,trackRPV['Time'],RPV_Derr) 
-UCert['VelErr_x'] = RPV_Ve
+# trackRPV = pd.read_pickle(f"./RPVs/trackRPV_0Vel_Start.pkl")
 
 
 #%% Generate Simulated Accelerometer for full model
@@ -102,32 +90,29 @@ UCert['VelErr_x'] = RPV_Ve
 sensorSim, AccelObj = AccelSim(referenceTrajectory, N_model, changeDefaultCoeff, CoeffDict, g)
 
 #%% Perform Regression Analysis for full model
-
-coefficientDF, Error, cov_A = RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_model, g)
-
-results_list = [Error, AccelObj, sensorSim, coefficientDF, cov_A]
+coefficientDF, Error, cov_A, AW, Ve_xW, LeastSquaresMethod, W = RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_model, g, sigmaRPV, WLSoption = WLS)
+results_list1 = [Error, AccelObj, sensorSim, coefficientDF, cov_A, AW, Ve_xW, LeastSquaresMethod, W]
 
 Results = {}
-
-Results[f"Coeff: {ModelDict[str(N_model[0])]}-{ModelDict[str(N_model[1]-1)]}"] = results_list
+Results[f"Coeff: {ModelDict[str(N_model[0])]}-{ModelDict[str(N_model[1]-1)]}"] = results_list1
 
 
 #%% perform Regression Analysis for individual coefficients
 
 if individualCoeffAnalysis == True:
     for n in range(N_model[1]):
-        
+
         N_model[0] = n
         N_model[1] = n+1
         
         sensorSim, AccelObj = AccelSim(referenceTrajectory, N_model, changeDefaultCoeff, CoeffDict, g)
     
-        coefficientDF, Error, cov_A = RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_model, g)
+        coefficientDF, Error, cov_A, AW, Ve_xW, LeastSquaresMethod, W = RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_model, g, sigmaRPV, WLSoption = WLS)
     
-        results_list = [Error, AccelObj, sensorSim, coefficientDF, cov_A]
+        results_list1 = [Error, AccelObj, sensorSim, coefficientDF, cov_A, AW, Ve_xW, LeastSquaresMethod, W]
     
-        Results[f"Coeff: {ModelDict[str(N_model[0])]}-{ModelDict[str(N_model[1]-1)]}"] = results_list
- 
+        Results[f"Coeff: {ModelDict[str(N_model[0])]}-{ModelDict[str(N_model[1]-1)]}"] = results_list1 
+  
 #%% Results Invesigation
 
 for key in Results:
@@ -135,11 +120,12 @@ for key in Results:
     print(key)
     print(Results[key][3])
     print('\n')
-   
-    
-print(Results['Coeff: K_1-K_5'][4])    
+    Results[key][3].to_csv('Results/' + key + f'_SigmaRPV-{sigmaRPV}' + f'_WLS-{WLS}'+ '.csv', float_format='%.20f')    
 
-df = pd.DataFrame(Results['Coeff: K_1-K_5'][4]).T
+
+print(Results['Coeff: K_1-K_5'][4])
+    
+df1 = pd.DataFrame(Results['Coeff: K_1-K_5'][4]).T
 # df.to_excel(excel_writer = "/Users/seanabrahamson/Library/CloudStorage/Box-Box/EE_Masters/Thesis/Results.xlsx")
 
 
@@ -147,8 +133,6 @@ df = pd.DataFrame(Results['Coeff: K_1-K_5'][4]).T
 """
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 PLOTS For THESIS
-
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 """
@@ -165,9 +149,9 @@ sensorSim = Results[f"Coeff: {ModelDict[str(N_model[0])]}-{ModelDict[str(N_model
 
     
 #%%
-Plots = False
+ThesisPlots = False
 
-if Plots == True: 
+if ThesisPlots == True: 
     
     #%% PLOTS for Thesis
     #%% Reference Trajectory
@@ -241,7 +225,7 @@ if Plots == True:
     for key in Results:
         Error = Results[key][0]
         if init == True:
-            DistErrorCoeffs_fig.plotTwoAxis(-Error[['DistErr_x']], df_x = Error[['Time']], Name = key, mode = 'markers', Opacity = .7, Size = 4)
+            DistErrorCoeffs_fig.plotTwoAxis(-Error[['DistErr_x']], df_x = Error[['Time']], Name = key, Mode = 'markers', Opacity = .7, Size = 4)
             init = False
         else:
             DistErrorCoeffs_fig.addScatter(-Error[['DistErr_x']], df_x = Error[['Time']], secondary_y = False, Name = key[:-4], Opacity = .7, Size = 4)
@@ -264,7 +248,7 @@ if Plots == True:
     for key in Results:
         Error = Results[key][0]
         if init == True:
-            DistErrorCoeffs_figZoom.plotTwoAxis(-Error[['DistErr_x']], df_x = Error[['Time']], Name = key, mode = 'markers', Opacity = .9, Size = 4)
+            DistErrorCoeffs_figZoom.plotTwoAxis(-Error[['DistErr_x']], df_x = Error[['Time']], Name = key, Mode = 'markers', Opacity = .9, Size = 4)
             init = False
         else:
             DistErrorCoeffs_figZoom.addScatter(-Error[['DistErr_x']], df_x = Error[['Time']], secondary_y = False, Name = key[:-4],Opacity = .9, Size = 4)
@@ -290,7 +274,7 @@ if Plots == True:
     for key in Results:
         Error = Results[key][0]
         if init == True:
-            VelErrorCoeffs_fig.plotTwoAxis(-Error[['VelErr_x']], df_x = Error[['Time']], Name = key, mode = 'markers')
+            VelErrorCoeffs_fig.plotTwoAxis(-Error[['VelErr_x']], df_x = Error[['Time']], Name = key, Mode = 'markers')
             init = False
         else:
             VelErrorCoeffs_fig.addScatter(-Error[['VelErr_x']], df_x = Error[['Time']], secondary_y = False, Name = key[:-4])
@@ -312,7 +296,7 @@ if Plots == True:
     for key in Results:
         Error = Results[key][0]
         if init == True:
-            VelErrorCoeffs_figZoom.plotTwoAxis(-Error[['VelErr_x']], df_x = Error[['Time']], Name = key, mode = 'markers')
+            VelErrorCoeffs_figZoom.plotTwoAxis(-Error[['VelErr_x']], df_x = Error[['Time']], Name = key, Mode = 'markers')
             init = False
         else:
             VelErrorCoeffs_figZoom.addScatter(-Error[['VelErr_x']], df_x = Error[['Time']], secondary_y = False, Name = key[:-4])
@@ -382,18 +366,58 @@ if Plots == True:
 
     RPV_UncertPlot2.show()
     # RPV_PlotvsTraj1.write_image('ReferencePositionVector1',saveFigPath)
+
+   
+'''
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Other Plots     
+Used for developing code originally.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+'''
+OtherPlots = False  
+
+if OtherPlots == True:     
     
+    #%% Plots exploring increase in error in larger coefficients
+    
+    # Plot Regression Lines
+    regressionPlots_fig = PlotlyPlot()
+    
+    regressionPlots_fig.setTitle('Regression Plots')
+    regressionPlots_fig.setYaxisTitle('Ve_xW')
+    regressionPlots_fig.setXaxisTitle('AW')
+    regressionPlots_fig.plotNoDF(Results['Coeff: K_5-K_5'][5][1,:], Results['Coeff: K_5-K_5'][6], Mode = 'markers')
+    regressionPlots_fig.show()
+    
+    regressionPlots_fig_2 = PlotlyPlot()
+    
+    regressionPlots_fig_2.setTitle('Regression Plots')
+    regressionPlots_fig_2.setYaxisTitle('Ve_xW')
+    regressionPlots_fig_2.setXaxisTitle('Indicies')
+    regressionPlots_fig_2.plotNoDF(Y = Results['Coeff: K_5-K_5'][5][1,:], Mode = 'markers')
+    regressionPlots_fig_2.show()
     
 
-    #%% Other Plots    
-    '''
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    regressionPlots_fig_3 = PlotlyPlot()
     
-    Other Plots     
-    Used for developing code originally.
+    regressionPlots_fig_3.setTitle('Regression Plots')
+    regressionPlots_fig_3.setYaxisTitle('Ve_xW')
+    regressionPlots_fig_3.setXaxisTitle('Indicies')
+    regressionPlots_fig_3.plotNoDF(Y = Results['Coeff: K_5-K_5'][6], Mode = 'markers', Name = 'Ve_x')
+    regressionPlots_fig_3.addScatterNoDF(Y = Results['Coeff: K_5-K_5'][5][1,:]*coefficientDF['Accel Model'][5], Mode = 'markers', Name = 'Aw')
+    regressionPlots_fig_3.show()
+
     
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    '''
+    regressionPlots_fig_4 = PlotlyPlot()
+    regressionPlots_fig_4.setTitle('Regression Plot')
+    regressionPlots_fig_4.setYaxisTitle('Residual')
+    regressionPlots_fig_4.setXaxisTitle('Indicies')
+    regressionPlots_fig_4.plotNoDF(Y = Results['Coeff: K_5-K_5'][6] - Results['Coeff: K_5-K_5'][5][1,:]*coefficientDF['Accel Model'][5], Mode = 'markers')
+    #regressionPlots_fig_4.addScatterNoDF(Y = Results['Coeff: K_5-K_5'][6] - Results['Coeff: K_5-K_5'][5][1,:]*coefficientDF['Accel Model'][5], Mode = 'markers')
+    regressionPlots_fig_4.show()
+    
     #%% Plot reference Trajectory Results
     refTrajectory_fig = PlotlyPlot()
     
@@ -523,7 +547,7 @@ if Plots == True:
 
 
 
-#%% Plots Residuals Acceleration and Velocity
+    #%% Plots Residuals Acceleration and Velocity
     
     ResidualsVsVel_fig = PlotlyPlot()
     
@@ -547,7 +571,8 @@ if Plots == True:
     ResidualsVsAccel_fig.addLine(Error[['SensorSim_Ax']], df_x = Error[['Time']],secondary_y=True)
     ResidualsVsAccel_fig.show()
         
-#%% Plot Velocity Error versus velocity error model
+    #%% Plot Velocity Error versus velocity error model
+
     VelErrVsResid = PlotlyPlot()
     
     VelErrVsResid.setTitle('Velocity Error vs Estimated Error Model')
@@ -557,6 +582,26 @@ if Plots == True:
     VelErrVsResid.addScatter(Error[['V_error_model']], df_x = Error[['Time']], secondary_y=False)
     # VelErrVsResid.addScatter(Error[['A_Bias']], df_x = Error[['Time']], secondary_y=False)
     VelErrVsResid.show()
+    
+    
+    
+    #%% Plot Weightings for Least Squares
+
+    LeastSquaresWeighting_fig = PlotlyPlot()
+    
+    LeastSquaresWeighting_fig.setTitle('Weightings for Least Squares')
+    LeastSquaresWeighting_fig.setYaxisTitle('Covariance')
+    LeastSquaresWeighting_fig.setYaxis2Title('Velocity')
+    LeastSquaresWeighting_fig.setXaxisTitle('Index')
+    LeastSquaresWeighting_fig.settwoAxisChoice([True])
+    LeastSquaresWeighting_fig.plotTwoAxis(referenceTrajectory[['refVel_x']], df_x = referenceTrajectory[['Time']])
+    LeastSquaresWeighting_fig.addScatterNoDF(Results['Coeff: K_1-K_5'][0]['Time'], np.diag(Results['Coeff: K_1-K_5'][7]),secondary_y = False)
+    LeastSquaresWeighting_fig.show()
+
+    
+    
+    
+    
     
     
     

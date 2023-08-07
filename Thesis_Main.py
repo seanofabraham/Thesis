@@ -12,6 +12,8 @@ This is the main running code for the thesis. It calls the functions needed.
 
 # from Thesis_Utils import *
 # from scipy.signal import savgol_filter
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
 from classes_x import *
 import numpy as np
 from scipy import integrate
@@ -20,6 +22,7 @@ import plotly.graph_objects as go
 import pandas as pd
 from sigfig import round
 import os
+from sklearn.linear_model import LinearRegression
 
 def importEGIData(Headers):
     
@@ -166,7 +169,9 @@ def generateTrackRPV(referenceTrajectory, sigmaRPV, tauRPV, biasRPV, Overwrite=T
     print("\n Generating RPV")
     trackRPV = pd.DataFrame()
     
-    trackRPVzeroVel = "NoZeroVel"
+    # trackRPVzeroVel = "NoZeroVel"
+    trackRPVzeroVel = 'Start'
+    
     
     if trackRPVzeroVel == "NoZeroVel":
         print("No zero velocity portions of test selected")
@@ -189,6 +194,7 @@ def generateTrackRPV(referenceTrajectory, sigmaRPV, tauRPV, biasRPV, Overwrite=T
         trackRPV_zeroVel_start = pd.DataFrame() 
         trackRPV_zeroVel_start['Time'] = referenceTrajectory['Time'][referenceTrajectory['Time']<trackRPV['Time'].min()]
         trackRPV_zeroVel_start['Interupters_DwnTrk_dist'] = 0
+        trackRPV_zeroVel_start = trackRPV_zeroVel_start.tail(10)
     
         trackRPV_zeroVel_end = pd.DataFrame()
         
@@ -272,7 +278,7 @@ def AccelSim(referenceTrajectory, N_model, changeDefaultCoeff, CoeffDict, g):
     
     return [sensorSim, AccelObj]
 
-def RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_model, g, saveToPickel = False):
+def RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_model, g,sigmaRPV, saveToPickel = False, WLSoption = True):
     
     #%% Error - Compare simulated acceleromter with track reference
     """
@@ -316,8 +322,6 @@ def RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_mod
     referenceTrajectory['intAx^4 (g)'] = -integrate.cumulative_trapezoid(y = referenceTrajectory['Ax^4 (g)'],x = referenceTrajectory['Time'],initial = 0)
     referenceTrajectory['intAx^5 (g)'] = -integrate.cumulative_trapezoid(y = referenceTrajectory['Ax^5 (g)'],x = referenceTrajectory['Time'],initial = 0) 
     
-    # Computer Jerk Term
-    # sensorSim['Jx'] = 
     
     Vx = np.interp(Ve_t, referenceTrajectory['Time'],referenceTrajectory['refVel_x'])
     intAx_2 = np.interp(Ve_t,referenceTrajectory['Time'],referenceTrajectory['intAx^2 (g)']) 
@@ -332,7 +336,7 @@ def RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_mod
     coeff_dict = {'Est_V_0': 0, 'Est_K_1': 0, 'Est_K_0': 0, 'Est_K_2': 0, 'Est_K_3': 0, 'Est_K_4': 0, 'Est_K_5': 0}
     
     # Create Complete A Matrix
-    complete_A = np.array([np.ones(len(Ve_t))/g, -Vx/g, -Ve_t, intAx_2, intAx_3, intAx_4, intAx_5])
+    complete_A = np.array([np.ones(len(Ve_t))/g, -Vx/g, -Ve_t, intAx_2, intAx_3, intAx_4, intAx_5])*g
     complete_A = complete_A.T
     
     complete_A_DF = pd.DataFrame(np.fliplr(complete_A), columns=['IntAx_5', 'IntAx_4', 'IntAx_3', 'IntAx_2', 'Ve_t', 'Vx', 'Ones'])
@@ -344,17 +348,58 @@ def RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_mod
 
     trimmed_A = complete_A[:,trimmed_A_filt]
     
+    '''
+    COMPUTE COVARIANCE
+    '''
+
+    #%% Compute Covariance    
     
-    # Compute Covariance
-    # cov_y = 
-    
-    covariance_A = np.linalg.inv(np.matmul(np.transpose(trimmed_A),trimmed_A)) # Htrans * cov(y) * transpose of first part
-    
+    #%% 
     # Linear Regression
     coeff_list = tuple(None for _ in range(trimmed_A.shape[1]))
+
     
-    coeff_list = np.linalg.lstsq(trimmed_A*g, Ve_x, rcond=None)[0]
+    if sigmaRPV == 0 or WLSoption == False: 
+        size = trimmed_A.shape[0]
+        W = np.identity(size)
     
+    else: 
+        
+        # Develop weighted matrix
+        delta_t = np.diff(trackRPV['Time'])
+        vel_sig = np.sqrt(2)*sigmaRPV/delta_t
+        
+        W = np.diag(1/vel_sig)
+        
+        # W = np.linalg.inv(np.diag(vel_sig))
+    
+    
+    AW = np.transpose(trimmed_A).dot(W)
+    Ve_xW = W.dot(Ve_x)
+    
+    ## CHANGE ME    
+    LeastSquaresMethod = 'SciKit' 
+   
+    if LeastSquaresMethod == 'Numpy':
+
+        
+        coeff_list = np.linalg.lstsq(np.transpose(AW), Ve_xW, rcond=None)[0] # This has just been used for debugging to check if "Long" least squares leads to same results.
+    
+    elif LeastSquaresMethod == 'SciKit':
+        testSKlearn = LinearRegression()
+        testSKlearn.fit(trimmed_A, Ve_x, sample_weight=(np.diag(W)))
+        coeff_list = testSKlearn.coef_ 
+    
+    elif LeastSquaresMethod == 'LongHand':
+        At = np.transpose(trimmed_A)
+        coeff_list = np.linalg.inv(At.dot(W).dot(trimmed_A)).dot(At).dot(W).dot(Ve_x)
+        
+    else: 
+        print("Did not select an applicable Least Squares Method")
+
+
+    covariance_A = np.linalg.inv(np.dot(AW,trimmed_A))
+
     print_List = np.array(list(coeff_dict.keys()))
     
     n = 0
@@ -397,14 +442,17 @@ def RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_mod
     
     Error['V_error_model'] = sum(V_error_model_terms)*g 
     Error['Ve_x_Resid'] = Error['VelErr_x'] - Error['V_error_model'] 
-   
-        
+    
+  
     #%% Save off results:
     if saveToPickel == True:
         Error.to_pickle(f"./ErrorDF_{N_model[0]}-{N_model[1]}.pkl")
         coefficientDF.to_pickle(f"./coefficientDF_{N_model[0]}-{N_model[1]}.pkl")
+        
+    A = trimmed_A
+        
 
-    return [coefficientDF, Error, covariance_A]
+    return [coefficientDF, Error, covariance_A, A, Ve_x, W, LeastSquaresMethod]
 
 def figText(text):
 

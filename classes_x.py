@@ -11,8 +11,8 @@ class Accelerometer:
      
         self.g = 9.791807                     # Definition of g
         
-        self.AccelModelCoef = {'K_1': 0,                          # Scale Factor (g/g) NEEDS UPDATED
-                               'K_0': 5            * 10**-6,      # Bias (g)
+        self.AccelModelCoef = {'K_1': 5            * 10**-6,                          # Scale Factor (g/g) NEEDS UPDATED
+                               'K_0': 6            * 10**-6,      # Bias (g)
                                'K_2': 61.14        * 10**-6,      # is second-order coefficient (g/g^2)
                                'K_3': 0.02         * 10**-6,      # is third-order coefficient  (g/g^3)
                                'K_4': 0.006        * 10**-6,      # is fourth-order coefficient (g/g^4)
@@ -137,6 +137,35 @@ class PlotlyPlot:
         self.twoAxisChoice = twoAxisChoice
         return
     
+    
+    def plotNoDF(self, X = np.empty((0,)), Y = np.empty((0,)), Mode = 'lines', Name = None, Opacity = 1, Size = None):
+        
+        if X.size == 0:
+            self.fig = go.Figure(go.Scatter(y = Y, name = Name, mode = Mode,  opacity = Opacity))
+        else:
+            self.fig = go.Figure(go.Scatter(x = X, y = Y, name = Name, mode = Mode,  opacity = Opacity))
+
+        # Add Title 
+        self.fig.update_layout(
+            title_text = self.title)
+        
+        # Add Axis Labels
+        self.fig.update_xaxes(title_text = self.x_axis)
+        self.fig.update_yaxes(title_text = self.y_axis)
+        
+        return
+    
+    def addScatterNoDF(self,X = np.empty((0,)), Y = np.empty((0,)), Mode = 'lines', Name = None, Opacity = 1, Size = None, secondary_y = None):
+        
+        if secondary_y != None:           
+            self.twoAxisChoice.append(secondary_y)
+        
+        if X.size == 0:
+            self.fig.add_trace(go.Scatter(y = Y, name = Name, mode = Mode,  opacity = Opacity), secondary_y=secondary_y)
+        else:
+            self.fig.add_trace(go.Scatter(x = X, y = Y, name = Name, mode = Mode,  opacity = Opacity), secondary_y=secondary_y)
+
+
     def plotSimple(self,df, x = None, y = None):
         
         if x == None and y == None:

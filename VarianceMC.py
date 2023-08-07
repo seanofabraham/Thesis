@@ -11,8 +11,8 @@ import os.path
 import pandas as pd
 import plotly.express as px
 import plotly.io as pio
-pio.renderers.default = 'browser'
 
+pio.renderers.default = 'browser'
 
 # from Thesis_Utils import *
 
@@ -27,7 +27,7 @@ generateNewTrajectory = False
 #Generate New RPV (with configuration parameters)
 generateNewRPVs = False
 
-sigmaRPV = 0.006           # Meters (.006 is about a quarter of an inch)
+sigmaRPV = 0.006       # Meters (.006 is about a quarter of an inch)
 tauRPV =  0            # Time Lag Error (seconds)
 biasRPV = 0            # Bias error in RPV (meters)
 
@@ -47,15 +47,19 @@ if generateNewRPVs == True:
 
 # Create DF with all trackRPVs
 trueRPV = pd.read_pickle(f"./RPVs/trackRPV_sig0_tau0_bias0.pkl")
-RPVsErrDist = pd.DataFrame()
-RPVsErrVel = pd.DataFrame()
 RPVsErrDistLong = pd.DataFrame()
 RPVsErrVelLong = pd.DataFrame()
 RPVerror = pd.DataFrame()
 RPVlist = []
+RPVsDistErrList = []
+RPVsVelErrList = []
 
 #%%
 for i in range(MCn):
+    
+    RPVsErrDist = pd.DataFrame()
+    RPVsErrVel = pd.DataFrame()
+    
     RPV = pd.read_pickle(f"./VarianceRPVs/trackRPV_sig{sigmaRPV}_tau{tauRPV}_bias{biasRPV}_{i}.pkl")
     
     RPVsErrDist['Time'] = RPV['Time']
@@ -74,13 +78,38 @@ for i in range(MCn):
     RPVsErrDistLong = RPVsErrDistLong.append(RPVsErrDist, ignore_index=True)
     RPVsErrVelLong = RPVsErrVelLong.append(RPVsErrVel, ignore_index=True)
     RPVlist.append(RPV)
-    RPVsDistErrList.append(RPVsErrVel)
-    RPVsVelErrList.append()
-    
+    RPVsDistErrList.append(RPVsErrDist)
+    RPVsVelErrList.append(RPVsErrVel)
+        
+    del RPVsErrDist
+    del RPVsErrVel
+
+
+#%%    
 # Create DF with all trackRPVs
-RPVs = pd.read_pickle(f"./RPVs/trackRPV_sig0_tau0_bias0.pkl")
-RPVsDF = pd.concat([RPVs] + [RPV['Interupters_DwnTrk_dist'] for RPV in RPVlist], axis=1)  
-    
+RPVVelErr = RPVsVelErrList[0]
+
+RPVsDF = pd.concat([trueRPV] + [RPV['Interupters_DwnTrk_dist'] for RPV in RPVlist], axis=1)  
+RPVDistErr = pd.concat([trueRPV] + [RPV['Dist_er'] for RPV in RPVsDistErrList], axis=1)  
+RPVVelErr = pd.concat([RPVVelErr] + [RPV['VelErr_x'] for RPV in RPVsVelErrList], axis=1) 
+
+RPVVelErr['Delta_t'] = np.diff(RPVDistErr['Time'])
+RPVVelErr['Sigma'] = np.sqrt(2)*sigmaRPV/RPVVelErr['Delta_t']
+
+#%% Generate Results
+
+# Calculate the standard deviation for each column
+DistErr_std = RPVDistErr.iloc[:, 2:].std(axis=1)
+# Add the standard deviation column to the dataframe
+RPVDistErr['Std'] = DistErr_std
+
+
+# Calculate the standard deviation for each column
+VelErr_std = RPVVelErr.iloc[:, 2:].std(axis=1)
+# Add the standard deviation column to the dataframe
+RPVVelErr['Std'] = VelErr_std
+
+
 
 #%%
 Plots = False
@@ -97,6 +126,11 @@ if Plots == True:
     DensityPlotDist.update_traces(contours_coloring='fill', contours_showlines=False, colorscale = 'blues')
     DensityPlotDist.add_hline(y=sigmaRPV)
     DensityPlotDist.add_hline(y=-sigmaRPV)
+    
+    DensityPlotDist.add_trace(go.Scatter(x = trueRPV['Interupters_DwnTrk_dist'],
+    y = RPVDistErr['Std']))
+    
+    DensityPlotDist.update_layout(xaxis_title="Down Track Distance", yaxis_title="Distance Error (m)")
     DensityPlotDist.show()
     
     #%% Density Contour Plot Velocity
@@ -107,9 +141,17 @@ if Plots == True:
     
     # DensityPlot = px.density_contour(RPVsLong, x='Time', y='Dist_er', marginal_y='histogram')
     DensityPlotVel1.update_traces(contours_coloring='fill',contours_showlines=False, colorscale = 'blues')
+    DensityPlotVel1.update_layout(xaxis_title="Time", yaxis_title="Velocity Error (m/s)")
+
+        
+    DensityPlotVel1.add_trace(go.Scatter(x = RPVsErrVelLong['Time'], y = RPVVelErr['Std']))
+    
+    DensityPlotVel1.add_trace(go.Scatter(x = RPVsErrVelLong['Time'], y = RPVVelErr['Sigma']))
+
 
     DensityPlotVel1.show()
     
+    #%%
     
     DensityPlotVel2= go.Figure(go.Histogram2dContour(
         x = RPVsErrVelLong['Interupters_DwnTrk_dist'],
@@ -118,42 +160,12 @@ if Plots == True:
     
     # DensityPlot = px.density_contour(RPVsLong, x='Time', y='Dist_er', marginal_y='histogram')
     DensityPlotVel2.update_traces(contours_coloring='fill',contours_showlines=False, colorscale = 'blues')
+    DensityPlotVel2.update_layout(xaxis_title="Down Track Distance", yaxis_title="Velocity Error (m/s)")
 
     DensityPlotVel2.show()
     
     
     
     
-    #%% Uncertainty in RPV plots
-    RPV_UncertPlot1 = PlotlyPlot()
-    
-    RPV_UncertPlot1.setTitle('Reference Position Vector Error')
-    RPV_UncertPlot1.setYaxisTitle('Distance (m)')
-    RPV_UncertPlot1.setYaxis2Title('Distance (m)')
-    RPV_UncertPlot1.setXaxisTitle('Time (s)')
-    RPV_UncertPlot1.settwoAxisChoice([False, True])
-    RPV_UncertPlot1.plotTwoAxis(UCert[['DistErr_x']], df_x = UCert[['Time']], Name = 'Distance Error', Mode = 'markers')
-    RPV_UncertPlot1.addScatter(referenceTrajectory[['refDist_x']], df_x = referenceTrajectory[['Time']], Mode = 'markers', Name = 'Ref Trajectory Velocity',secondary_y = True)
-     
-    RPV_UncertPlot1.update_template()
 
-    RPV_UncertPlot1.show()
-    # RPV_PlotvsTraj1.write_image('ReferencePositionVector1',saveFigPath)
-     
-    
-    RPV_UncertPlot2 = PlotlyPlot()
-    
-    RPV_UncertPlot2.setTitle('Reference Position Vector Error')
-    RPV_UncertPlot2.setYaxisTitle('Velocity Error (m/s)')
-    RPV_UncertPlot2.setYaxis2Title('Velocity (m/s)')
-    RPV_UncertPlot2.setXaxisTitle('Time (s)')
-    RPV_UncertPlot2.settwoAxisChoice([False, True])
-    RPV_UncertPlot2.plotTwoAxis(UCert[['VelErr_x']], df_x = UCert[['Time']], Name = 'Velocity Error', Mode = 'markers')
-    RPV_UncertPlot2.addScatter(referenceTrajectory[['refVel_x']], df_x = referenceTrajectory[['Time']], Mode = 'markers', Name = 'Ref Trajectory Velocity',secondary_y = True)
-   
-    
-    RPV_UncertPlot2.update_template()
-
-    RPV_UncertPlot2.show()
-    # RPV_PlotvsTraj1.write_image('ReferencePositionVector1',saveFigPath)
     
