@@ -369,7 +369,10 @@ def RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_mod
         delta_t = np.diff(trackRPV['Time'])
         vel_sig = np.sqrt(2)*sigmaRPV/delta_t
         
-        W = np.diag(1/vel_sig)
+        W = np.diag(1/vel_sig,0) - np.diag((1/(2*vel_sig[1:])),-1) - np.diag((1/(2*vel_sig[1:])),1)
+        
+        
+        
         
         # W = np.linalg.inv(np.diag(vel_sig))
     
@@ -378,11 +381,10 @@ def RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_mod
     Ve_xW = W.dot(Ve_x)
     
     ## CHANGE ME    
-    LeastSquaresMethod = 'SciKit' 
+    LeastSquaresMethod = 'LongHand' 
    
     if LeastSquaresMethod == 'Numpy':
 
-        
         coeff_list = np.linalg.lstsq(np.transpose(AW), Ve_xW, rcond=None)[0] # This has just been used for debugging to check if "Long" least squares leads to same results.
     
     elif LeastSquaresMethod == 'SciKit':

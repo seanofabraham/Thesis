@@ -23,7 +23,7 @@ generateNewTrajectory = False
 #Generate New RPV (with configuration parameters)
 generateNewRPV = False
 
-sigmaRPV = 0.006        # Meters (.006 is about a quarter of an inch)
+sigmaRPV = 0.00001       # Meters (.006 is about a quarter of an inch)
 tauRPV =  0            # Time Lag Error (seconds)
 biasRPV = 0            # Bias error in RPV (meters)
 
@@ -120,10 +120,13 @@ for key in Results:
     print(key)
     print(Results[key][3])
     print('\n')
-    Results[key][3].to_csv('Results/' + key + f'_SigmaRPV-{sigmaRPV}' + f'_WLS-{WLS}'+ '.csv', float_format='%.20f')    
+    Results[key][3].to_csv('Results/' + key + f'_SigmaRPV-{sigmaRPV}' + f'_WLS-{WLS}_corr'+ f'_{Results[key][8]}'+'.csv', float_format='%.20f')    
 
 
 print(Results['Coeff: K_1-K_5'][4])
+covFilePath = 'Results/' + 'COV_Coeff: K_1-K_5' + f'_SigmaRPV-{sigmaRPV}' +'_corr'+'.csv'
+np.savetxt(covFilePath, Results['Coeff: K_1-K_5'][4], delimiter=",")
+
     
 df1 = pd.DataFrame(Results['Coeff: K_1-K_5'][4]).T
 # df.to_excel(excel_writer = "/Users/seanabrahamson/Library/CloudStorage/Box-Box/EE_Masters/Thesis/Results.xlsx")
@@ -367,7 +370,51 @@ if ThesisPlots == True:
     RPV_UncertPlot2.show()
     # RPV_PlotvsTraj1.write_image('ReferencePositionVector1',saveFigPath)
 
-   
+        
+    #%% Plot Weightings for Least Squares vs Velocity
+
+    LeastSquaresWeighting_fig = PlotlyPlot()
+    
+    LeastSquaresWeighting_fig.setTitle('Weightings for Least Squares')
+    LeastSquaresWeighting_fig.setYaxisTitle('Covariance')
+    LeastSquaresWeighting_fig.setYaxis2Title('Velocity')
+    LeastSquaresWeighting_fig.setXaxisTitle('Index')
+    LeastSquaresWeighting_fig.settwoAxisChoice([True]) 
+    LeastSquaresWeighting_fig.plotTwoAxis(referenceTrajectory[['refVel_x']], df_x = referenceTrajectory[['Time']])
+    LeastSquaresWeighting_fig.addScatterNoDF(Results['Coeff: K_1-K_5'][0]['Time'], np.diag(Results['Coeff: K_1-K_5'][7]),secondary_y = False, Name = 'Least Squares Weighting')
+    LeastSquaresWeighting_fig.show()
+    
+    #%% Plotting Weighting for Least Squares vs errors.
+    
+    VelErrorCoeffs_fig_LS = PlotlyPlot()
+     
+    VelErrorCoeffs_fig_LS.setTitle('Velocity Errors')
+    VelErrorCoeffs_fig_LS.setXaxisTitle('Time (s)')
+    VelErrorCoeffs_fig_LS.setYaxisTitle('Velocity (m/s)')
+    VelErrorCoeffs_fig_LS.setYaxis2Title('Velocity (m/s)')
+    VelErrorCoeffs_fig_LS.settwoAxisChoice([False, False])
+    init = True 
+    for key in Results:
+        Error = Results[key][0]
+        if init == True:
+            VelErrorCoeffs_fig_LS.plotTwoAxis(-Error[['VelErr_x']], df_x = Error[['Time']], Name = key, Mode = 'markers')
+            init = False
+        else:
+            VelErrorCoeffs_fig_LS.addScatter(-Error[['VelErr_x']], df_x = Error[['Time']], secondary_y = False, Name = key[:-4])
+    
+    VelErrorCoeffs_fig_LS.addScatterNoDF(Results['Coeff: K_1-K_5'][0]['Time'], np.diag(Results['Coeff: K_1-K_5'][7]),secondary_y = True, Name = 'Least Squares Weighting')
+
+    VelErrorCoeffs_fig_LS.update_template()       
+    VelErrorCoeffs_fig_LS.addShadedBox(zoom_x, zoom_y,scale_factor_y=1.7)
+    VelErrorCoeffs_fig_LS.show()
+    
+
+
+    
+    #%%
+ 
+
+  
 '''
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -417,6 +464,29 @@ if OtherPlots == True:
     regressionPlots_fig_4.plotNoDF(Y = Results['Coeff: K_5-K_5'][6] - Results['Coeff: K_5-K_5'][5][1,:]*coefficientDF['Accel Model'][5], Mode = 'markers')
     #regressionPlots_fig_4.addScatterNoDF(Y = Results['Coeff: K_5-K_5'][6] - Results['Coeff: K_5-K_5'][5][1,:]*coefficientDF['Accel Model'][5], Mode = 'markers')
     regressionPlots_fig_4.show()
+    
+    #%%
+    
+    VelErrorCoeffs_figZoom = PlotlyPlot()
+    
+    VelErrorCoeffs_figZoom.setTitle('Velocity Errors')
+    VelErrorCoeffs_figZoom.setXaxisTitle('Time (s)')
+    VelErrorCoeffs_figZoom.setYaxisTitle('Velocity (m/s)')
+    VelErrorCoeffs_figZoom.setYaxis2Title('Velocity (m/s)')
+    VelErrorCoeffs_figZoom.settwoAxisChoice([False, False])
+    init = True 
+    for key in Results:
+        Error = Results[key][0]
+        if init == True:
+            VelErrorCoeffs_figZoom.plotTwoAxis(-Error[['VelErr_x']], df_x = Error[['Time']], Name = key, Mode = 'markers')
+            init = False
+        else:
+            VelErrorCoeffs_figZoom.addScatter(-Error[['VelErr_x']], df_x = Error[['Time']], secondary_y = False, Name = key[:-4])
+    
+    VelErrorCoeffs_figZoom.update_template()     
+    VelErrorCoeffs_figZoom.zoom(zoom_x, zoom_y)
+    VelErrorCoeffs_figZoom.show()
+    VelErrorCoeffs_figZoom.write_image('VelocityErrorAllCoefficientsZoomed',saveFigPath)
     
     #%% Plot reference Trajectory Results
     refTrajectory_fig = PlotlyPlot()
@@ -483,7 +553,7 @@ if OtherPlots == True:
     coordinatFunc_fig.setYaxisTitle('Distance (m)')
     coordinatFunc_fig.setYaxis2Title('Accleration (m/s/s)')
     coordinatFunc_fig.settwoAxisChoice([False, True])
-    coordinatFunc_fig.plotTwoAxis(Error[['VelErr_x']], df_x = Error[['Time']], mode = 'markers')
+    coordinatFunc_fig.plotTwoAxis(Error[['VelErr_x']], df_x = Error[['Time']], Mode = 'markers')
     coordinatFunc_fig.addScatter(AccelOne.AccelModelCoef['K_2'], df_x = referenceTrajectory[['Time']], secondary_y = False)
     # coordinatFunc_fig.addScatter(referenceTrajectory[['refAccel_x']], df_x = referenceTrajectory[['Time']], secondary_y = True)
     coordinatFunc_fig.show()
@@ -584,24 +654,7 @@ if OtherPlots == True:
     VelErrVsResid.show()
     
     
-    
-    #%% Plot Weightings for Least Squares
 
-    LeastSquaresWeighting_fig = PlotlyPlot()
-    
-    LeastSquaresWeighting_fig.setTitle('Weightings for Least Squares')
-    LeastSquaresWeighting_fig.setYaxisTitle('Covariance')
-    LeastSquaresWeighting_fig.setYaxis2Title('Velocity')
-    LeastSquaresWeighting_fig.setXaxisTitle('Index')
-    LeastSquaresWeighting_fig.settwoAxisChoice([True])
-    LeastSquaresWeighting_fig.plotTwoAxis(referenceTrajectory[['refVel_x']], df_x = referenceTrajectory[['Time']])
-    LeastSquaresWeighting_fig.addScatterNoDF(Results['Coeff: K_1-K_5'][0]['Time'], np.diag(Results['Coeff: K_1-K_5'][7]),secondary_y = False)
-    LeastSquaresWeighting_fig.show()
-
-    
-    
-    
-    
     
     
     
