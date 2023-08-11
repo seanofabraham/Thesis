@@ -23,7 +23,7 @@ generateNewTrajectory = False
 #Generate New RPV (with configuration parameters)
 generateNewRPV = False
 
-sigmaRPV = 0.00001       # Meters (.006 is about a quarter of an inch)
+sigmaRPV = 0.00001     # Meters (.006 is about a quarter of an inch)
 tauRPV =  0            # Time Lag Error (seconds)
 biasRPV = 0            # Bias error in RPV (meters)
 
@@ -122,9 +122,11 @@ for key in Results:
     print('\n')
     Results[key][3].to_csv('Results/' + key + f'_SigmaRPV-{sigmaRPV}' + f'_WLS-{WLS}_corr'+ f'_{Results[key][8]}'+'.csv', float_format='%.20f')    
 
+   # Results[key][3].to_csv('Results/' + key + f'_SigmaRPV-{sigmaRPV}' + f'_WLS-{WLS}'+ f'_{Results[key][8]}'+'.csv', float_format='%.20f')    
+
 
 print(Results['Coeff: K_1-K_5'][4])
-covFilePath = 'Results/' + 'COV_Coeff: K_1-K_5' + f'_SigmaRPV-{sigmaRPV}' +'_corr'+'.csv'
+covFilePath = 'Results/' + 'COV_Coeff: K_1-K_5' + f'_SigmaRPV-{sigmaRPV}'+'_corr'+'.csv'
 np.savetxt(covFilePath, Results['Coeff: K_1-K_5'][4], delimiter=",")
 
     

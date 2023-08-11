@@ -369,12 +369,12 @@ def RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_mod
         delta_t = np.diff(trackRPV['Time'])
         vel_sig = np.sqrt(2)*sigmaRPV/delta_t
         
-        W = np.diag(1/vel_sig,0) - np.diag((1/(2*vel_sig[1:])),-1) - np.diag((1/(2*vel_sig[1:])),1)
+        W = np.diag(vel_sig,0) - np.diag((.5*vel_sig[1:]),-1) - np.diag((.5*vel_sig[1:]),1)
+    
+        W = np.linalg.inv(W)
         
+        # W = np.diag(1/vel_sig) 
         
-        
-        
-        # W = np.linalg.inv(np.diag(vel_sig))
     
     
     AW = np.transpose(trimmed_A).dot(W)
