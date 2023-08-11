@@ -23,7 +23,7 @@ generateNewTrajectory = False
 #Generate New RPV (with configuration parameters)
 generateNewRPV = False
 
-sigmaRPV = 0.00001     # Meters (.006 is about a quarter of an inch)
+sigmaRPV = 0.00     # Meters (.006 is about a quarter of an inch)
 tauRPV =  0            # Time Lag Error (seconds)
 biasRPV = 0            # Bias error in RPV (meters)
 
@@ -31,9 +31,8 @@ biasRPV = 0            # Bias error in RPV (meters)
 WLS = True
 
 # Used to play around with coefficients
-changeDefaultCoeff = False
-CoeffDict = {'K_1': 5E-6}
-             #K_5': 7E-3}
+changeDefaultCoeff = True
+CoeffDict = {'K_0': 1}
 
 # Used to determine how many coefficients to calculate
 
@@ -90,8 +89,8 @@ trackRPV = pd.read_pickle(f"./RPVs/trackRPV_sig{sigmaRPV}_tau{tauRPV}_bias{biasR
 sensorSim, AccelObj = AccelSim(referenceTrajectory, N_model, changeDefaultCoeff, CoeffDict, g)
 
 #%% Perform Regression Analysis for full model
-coefficientDF, Error, cov_A, AW, Ve_xW, LeastSquaresMethod, W = RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_model, g, sigmaRPV, WLSoption = WLS)
-results_list1 = [Error, AccelObj, sensorSim, coefficientDF, cov_A, AW, Ve_xW, LeastSquaresMethod, W]
+coefficientDF, Error, cov_A, A, Ve_x, W, LeastSquaresMethod = RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_model, g, sigmaRPV, WLSoption = WLS)
+results_list1 = [Error, AccelObj, sensorSim, coefficientDF, cov_A, A, Ve_x, W, LeastSquaresMethod]
 
 Results = {}
 Results[f"Coeff: {ModelDict[str(N_model[0])]}-{ModelDict[str(N_model[1]-1)]}"] = results_list1
@@ -107,9 +106,9 @@ if individualCoeffAnalysis == True:
         
         sensorSim, AccelObj = AccelSim(referenceTrajectory, N_model, changeDefaultCoeff, CoeffDict, g)
     
-        coefficientDF, Error, cov_A, AW, Ve_xW, LeastSquaresMethod, W = RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_model, g, sigmaRPV, WLSoption = WLS)
+        coefficientDF, Error, cov_A, A, Ve_x, W, LeastSquaresMethod = RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_model, g, sigmaRPV, WLSoption = WLS)
     
-        results_list1 = [Error, AccelObj, sensorSim, coefficientDF, cov_A, AW, Ve_xW, LeastSquaresMethod, W]
+        results_list1 = [Error, AccelObj, sensorSim, coefficientDF, cov_A, A, Ve_x, W, LeastSquaresMethod]
     
         Results[f"Coeff: {ModelDict[str(N_model[0])]}-{ModelDict[str(N_model[1]-1)]}"] = results_list1 
   
@@ -435,12 +434,14 @@ if OtherPlots == True:
     regressionPlots_fig = PlotlyPlot()
     
     regressionPlots_fig.setTitle('Regression Plots')
-    regressionPlots_fig.setYaxisTitle('Ve_xW')
-    regressionPlots_fig.setXaxisTitle('AW')
+    regressionPlots_fig.setYaxisTitle('Ve_x')
+    regressionPlots_fig.setXaxisTitle('A')
     regressionPlots_fig.plotNoDF(Results['Coeff: K_5-K_5'][5][1,:], Results['Coeff: K_5-K_5'][6], Mode = 'markers')
     regressionPlots_fig.show()
     
     regressionPlots_fig_2 = PlotlyPlot()
+    
+    #%%
     
     regressionPlots_fig_2.setTitle('Regression Plots')
     regressionPlots_fig_2.setYaxisTitle('Ve_xW')

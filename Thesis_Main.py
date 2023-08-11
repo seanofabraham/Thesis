@@ -270,6 +270,8 @@ def AccelSim(referenceTrajectory, N_model, changeDefaultCoeff, CoeffDict, g):
     #Store data in data frame. 
     sensorSim['SensorSim_Ax'] = A_x_sim
     
+    sensorSim['SensorSim_Ax'][referenceTrajectory['refAccel_x'] == 0] = 0
+    
     #%% Integrate Simulated accelerations to develop Velocity and Displacement.
     sensorSim['SensorSim_Vx'] = integrate.cumulative_trapezoid(y = sensorSim['SensorSim_Ax'],x = sensorSim['Time'],initial = 0) 
     sensorSim['SensorSim_Dx'] = integrate.cumulative_trapezoid(y = sensorSim['SensorSim_Vx'],x = sensorSim['Time'],initial = 0) 
@@ -294,8 +296,9 @@ def RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_mod
     Dist_Error['DistErr_x'] = trackRPV['Interupters_DwnTrk_dist'] - trackRPV['SensorDwnTrkDist']
     
     # Compute Velocity Error
-    Ve_x = np.diff(Dist_Error['DistErr_x'])/np.diff(Dist_Error['Time'])
-    Ve_t = (trackRPV['Time'].head(-1) + np.diff(Dist_Error['Time'])/2).to_numpy() # UPDATE TIME TAG FOR DIFFERENTIATION.
+    Ve_x = (np.diff(Dist_Error['DistErr_x'])/np.diff(Dist_Error['Time']))[1:]
+    Ve_t = (Dist_Error['Time'].head(-1) + np.diff(Dist_Error['Time'])/2).to_numpy()
+    Ve_t = Ve_t[1:]
     
     Error = pd.DataFrame()
     
@@ -369,19 +372,19 @@ def RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_mod
         delta_t = np.diff(trackRPV['Time'])
         vel_sig = np.sqrt(2)*sigmaRPV/delta_t
         
-        W = np.diag(vel_sig,0) - np.diag((.5*vel_sig[1:]),-1) - np.diag((.5*vel_sig[1:]),1)
+        # W = np.diag(vel_sig,0) - np.diag((.5*vel_sig[1:]),-1) - np.diag((.5*vel_sig[1:]),1)
     
-        W = np.linalg.inv(W)
+        # W = np.linalg.inv(W)
         
-        # W = np.diag(1/vel_sig) 
+        W = np.diag(1/vel_sig) 
         
-    
+    A = trimmed_A
     
     AW = np.transpose(trimmed_A).dot(W)
     Ve_xW = W.dot(Ve_x)
     
     ## CHANGE ME    
-    LeastSquaresMethod = 'LongHand' 
+    LeastSquaresMethod = 'SciKit' 
    
     if LeastSquaresMethod == 'Numpy':
 
@@ -390,7 +393,8 @@ def RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_mod
     elif LeastSquaresMethod == 'SciKit':
         testSKlearn = LinearRegression()
         testSKlearn.fit(trimmed_A, Ve_x, sample_weight=(np.diag(W)))
-        coeff_list = testSKlearn.coef_ 
+        coeff_list = testSKlearn.coef_
+        coeff_list[0] = testSKlearn.intercept_
     
     elif LeastSquaresMethod == 'LongHand':
         At = np.transpose(trimmed_A)
@@ -450,8 +454,6 @@ def RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_mod
     if saveToPickel == True:
         Error.to_pickle(f"./ErrorDF_{N_model[0]}-{N_model[1]}.pkl")
         coefficientDF.to_pickle(f"./coefficientDF_{N_model[0]}-{N_model[1]}.pkl")
-        
-    A = trimmed_A
         
 
     return [coefficientDF, Error, covariance_A, A, Ve_x, W, LeastSquaresMethod]
