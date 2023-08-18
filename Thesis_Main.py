@@ -23,21 +23,25 @@ import pandas as pd
 from sigfig import round
 import os
 from sklearn.linear_model import LinearRegression
+# import tkinter as tk
+# from tkinter import filedialog
 
-def importEGIData(Headers):
+
+def importEGIData(Headers,filepath):
     
     # Dialog Box to Select Data to import
     
-    root = tk.Tk()
-    root.withdraw()
-    root.wm_attributes('-topmost', 1)
-    filename = filedialog.askopenfilename(parent=root)
-    root.destroy()
+    # root = tk.Tk()
+    # root.withdraw()
+    # root.wm_attributes('-topmost', 1)
+    # filename = filedialog.askopenfilename(parent=root)
+    # root.destroy()
     
-    if filename == '':
+    
+    if filepath == '':
         print('No file selected')
     else: 
-        D = pd.read_csv(filename , names = Headers) # Pull only first row from Excel File
+        D = pd.read_csv(filepath , names = Headers) # Pull only first row from Excel File
 
     return D
 
@@ -74,8 +78,11 @@ def lpf(x, omega_c, T):
 
 def generateReferenceTrajectory(plotcheck = False):
     
-    EGI_accel = importEGIData(['Time', 'Ax','Ay','Az'])
-    EGI_vel = importEGIData(['Time', 'Vx','Vy', 'Vz'])
+    Accel_filepath = './EGI_data/EGI_accel.csv'
+    Vel_filepath = './EGI_data/EGI_accel.csv'
+    
+    EGI_accel = importEGIData(['Time', 'Ax','Ay','Az'],Accel_filepath)
+    EGI_vel = importEGIData(['Time', 'Vx','Vy', 'Vz'],Vel_filepath)
 
     # EGI_accel =  pd.read_csv('EGI_accel.csv',names = ['Time', 'Ax','Ay','Az'])
     # EGI_vel = pd.read_csv('EGI_vel.csv',names = ['Time', 'Vx','Vy', 'Vz'])
@@ -142,6 +149,12 @@ def generateReferenceTrajectory(plotcheck = False):
     # Integrate EGI velocity to compare to double integrated acceleration
     referenceTrajectory['refEGIDist_x'] = integrate.cumulative_trapezoid(y = referenceTrajectory['refEGIVel_x'],x = referenceTrajectory['Time'],initial = 0) 
     
+    # Compute start motion time.
+    startMotionTime = referenceTrajectory['Time'][referenceTrajectory['refAccel_x']>0.001].iloc[0]
+    
+    referenceTrajectory['Time'] = referenceTrajectory['Time']-startMotionTime
+    
+    
     #%% Save trajectory to Pickle File
     
     referenceTrajectory.to_pickle("./referenceTrajectory.pkl")
@@ -170,7 +183,7 @@ def generateTrackRPV(referenceTrajectory, sigmaRPV, tauRPV, biasRPV, Overwrite=T
     trackRPV = pd.DataFrame()
     
     # trackRPVzeroVel = "NoZeroVel"
-    trackRPVzeroVel = 'Start'
+    trackRPVzeroVel = 'NoZeroVel'
     
     
     if trackRPVzeroVel == "NoZeroVel":
@@ -194,7 +207,7 @@ def generateTrackRPV(referenceTrajectory, sigmaRPV, tauRPV, biasRPV, Overwrite=T
         trackRPV_zeroVel_start = pd.DataFrame() 
         trackRPV_zeroVel_start['Time'] = referenceTrajectory['Time'][referenceTrajectory['Time']<trackRPV['Time'].min()]
         trackRPV_zeroVel_start['Interupters_DwnTrk_dist'] = 0
-        trackRPV_zeroVel_start = trackRPV_zeroVel_start.tail(10)
+        trackRPV_zeroVel_start = trackRPV_zeroVel_start.tail(2)
     
         trackRPV_zeroVel_end = pd.DataFrame()
         
@@ -211,14 +224,17 @@ def generateTrackRPV(referenceTrajectory, sigmaRPV, tauRPV, biasRPV, Overwrite=T
             trackRPV_zeroVel_StartEnd = pd.concat((trackRPV_zeroVel_start,trackRPV_zeroVel_end), axis = 0)
             trackRPV_zeroVel_StartMidEnd = pd.concat((trackRPV, trackRPV_zeroVel_StartEnd), axis = 0)
             trackRPV_zeroVel_StartMidEnd = trackRPV_zeroVel_StartMidEnd.sort_values(by='Time').reset_index(drop=True)
-            trackRPV_zeroVel_StartMidEnd.to_pickle("./trackRPV_0Vel_StartEnd.pkl")
+            # trackRPV_zeroVel_StartMidEnd.to_pickle("./trackRPV_0Vel_StartEnd.pkl")
         elif trackRPVzeroVel == 'Start':
             trackRPV_zeroVel_StartMid = pd.concat((trackRPV, trackRPV_zeroVel_start), axis = 0)
             trackRPV_zeroVel_StartMid = trackRPV_zeroVel_StartMid.sort_values(by='Time').reset_index(drop=True)    
-            trackRPV_zeroVel_StartMid.to_pickle("./trackRPV_0Vel_Start.pkl")
+            # trackRPV_zeroVel_StartMid.to_pickle("./trackRPV_0Vel_Start.pkl")
+            trackRPV = trackRPV_zeroVel_StartMid
     
     
     trackRPV = trackRPV.sort_values(by='Time').reset_index(drop=True)
+    
+    # trackRPV['Time'] = trackRPV['Time']-trackRPV['Time'][0]
     
     # Add error to Track RPV
     if sigmaRPV != 0:
@@ -288,17 +304,17 @@ def RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_mod
     """
     Dist_Error = pd.DataFrame()
     Dist_Error['Time'] = trackRPV['Time']
-
+    
     # Interpolate Sensor Sim to Track
     
     trackRPV['SensorDwnTrkDist'] = np.interp(trackRPV['Time'],sensorSim['Time'],sensorSim['SensorSim_Dx'])
     
     Dist_Error['DistErr_x'] = trackRPV['Interupters_DwnTrk_dist'] - trackRPV['SensorDwnTrkDist']
     
+
     # Compute Velocity Error
-    Ve_x = (np.diff(Dist_Error['DistErr_x'])/np.diff(Dist_Error['Time']))[1:]
+    Ve_x = (np.diff(Dist_Error['DistErr_x'])/np.diff(Dist_Error['Time']))
     Ve_t = (Dist_Error['Time'].head(-1) + np.diff(Dist_Error['Time'])/2).to_numpy()
-    Ve_t = Ve_t[1:]
     
     Error = pd.DataFrame()
     
@@ -384,7 +400,7 @@ def RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_mod
     Ve_xW = W.dot(Ve_x)
     
     ## CHANGE ME    
-    LeastSquaresMethod = 'SciKit' 
+    LeastSquaresMethod = 'LongHand' 
    
     if LeastSquaresMethod == 'Numpy':
 

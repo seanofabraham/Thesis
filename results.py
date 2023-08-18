@@ -10,6 +10,7 @@ from Thesis_Main import *
 import os.path
 import pandas as pd
 import numpy as np 
+import plotly.graph_objects as go
 # from Thesis_Utils import *
 
 #%% Initial Configuration Parameters
@@ -18,12 +19,12 @@ import numpy as np
 g = 9.791807  
 
 #Generate New Trajectory and RPV
-generateNewTrajectory = False
+generateNewTrajectory = True
 
 #Generate New RPV (with configuration parameters)
-generateNewRPV = False
+generateNewRPV = True
 
-sigmaRPV = 0.00     # Meters (.006 is about a quarter of an inch)
+sigmaRPV = 0.0001     # Meters (.006 is about a quarter of an inch)
 tauRPV =  0            # Time Lag Error (seconds)
 biasRPV = 0            # Bias error in RPV (meters)
 
@@ -31,7 +32,7 @@ biasRPV = 0            # Bias error in RPV (meters)
 WLS = True
 
 # Used to play around with coefficients
-changeDefaultCoeff = True
+changeDefaultCoeff = False
 CoeffDict = {'K_0': 1}
 
 # Used to determine how many coefficients to calculate
@@ -90,7 +91,7 @@ sensorSim, AccelObj = AccelSim(referenceTrajectory, N_model, changeDefaultCoeff,
 
 #%% Perform Regression Analysis for full model
 coefficientDF, Error, cov_A, A, Ve_x, W, LeastSquaresMethod = RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_model, g, sigmaRPV, WLSoption = WLS)
-results_list1 = [Error, AccelObj, sensorSim, coefficientDF, cov_A, A, Ve_x, W, LeastSquaresMethod]
+results_list1 = {'Error': Error, 'AccelObj':AccelObj, 'sensorSim':sensorSim, 'coefficientDF':coefficientDF, 'cov_A':cov_A, 'A':A, 'Ve_x':Ve_x, 'W':W, 'LeastSquaresMethod':LeastSquaresMethod}
 
 Results = {}
 Results[f"Coeff: {ModelDict[str(N_model[0])]}-{ModelDict[str(N_model[1]-1)]}"] = results_list1
@@ -108,29 +109,26 @@ if individualCoeffAnalysis == True:
     
         coefficientDF, Error, cov_A, A, Ve_x, W, LeastSquaresMethod = RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_model, g, sigmaRPV, WLSoption = WLS)
     
-        results_list1 = [Error, AccelObj, sensorSim, coefficientDF, cov_A, A, Ve_x, W, LeastSquaresMethod]
+        results_list1 = {'Error': Error, 'AccelObj':AccelObj, 'sensorSim':sensorSim, 'coefficientDF':coefficientDF, 'cov_A':cov_A, 'A':A, 'Ve_x':Ve_x, 'W':W, 'LeastSquaresMethod':LeastSquaresMethod}
     
-        Results[f"Coeff: {ModelDict[str(N_model[0])]}-{ModelDict[str(N_model[1]-1)]}"] = results_list1 
+        Results[f"Coeff: {ModelDict[str(N_model[0])]}-{ModelDict[str(N_model[1]-1)]}"] = results_list1
   
 #%% Results Invesigation
 
 for key in Results:
     
     print(key)
-    print(Results[key][3])
+    print(Results[key]['coefficientDF'])
     print('\n')
-    Results[key][3].to_csv('Results/' + key + f'_SigmaRPV-{sigmaRPV}' + f'_WLS-{WLS}_corr'+ f'_{Results[key][8]}'+'.csv', float_format='%.20f')    
+    LeastSquaresMethod = Results[key]['LeastSquaresMethod']
+    Results[key]['coefficientDF'].to_csv('Results/' + key + f'_SigmaRPV-{sigmaRPV}' + f'_WLS-{WLS}_corr'+ f'_{LeastSquaresMethod}'+'.csv', float_format='%.20f')    
 
    # Results[key][3].to_csv('Results/' + key + f'_SigmaRPV-{sigmaRPV}' + f'_WLS-{WLS}'+ f'_{Results[key][8]}'+'.csv', float_format='%.20f')    
 
 
-print(Results['Coeff: K_1-K_5'][4])
+print(Results['Coeff: K_1-K_5']['cov_A'])
 covFilePath = 'Results/' + 'COV_Coeff: K_1-K_5' + f'_SigmaRPV-{sigmaRPV}'+'_corr'+'.csv'
-np.savetxt(covFilePath, Results['Coeff: K_1-K_5'][4], delimiter=",")
-
-    
-df1 = pd.DataFrame(Results['Coeff: K_1-K_5'][4]).T
-# df.to_excel(excel_writer = "/Users/seanabrahamson/Library/CloudStorage/Box-Box/EE_Masters/Thesis/Results.xlsx")
+np.savetxt(covFilePath, Results['Coeff: K_1-K_5']['cov_A'], delimiter=",")
 
 
 #%% Plots scripts 
@@ -148,8 +146,8 @@ saveFigPath = '/Users/seanabrahamson/Library/CloudStorage/Box-Box/EE_Masters/The
 N_model[0] = 0
 N_model[1] = 5
     
-Error = Results[f"Coeff: {ModelDict[str(N_model[0])]}-{ModelDict[str(N_model[1])]}"][0]
-sensorSim = Results[f"Coeff: {ModelDict[str(N_model[0])]}-{ModelDict[str(N_model[1])]}"][2]
+Error = Results[f"Coeff: {ModelDict[str(N_model[0])]}-{ModelDict[str(N_model[1])]}"]['Error']
+sensorSim = Results[f"Coeff: {ModelDict[str(N_model[0])]}-{ModelDict[str(N_model[1])]}"]['sensorSim']
 
     
 #%%
@@ -227,7 +225,7 @@ if ThesisPlots == True:
     DistErrorCoeffs_fig.settwoAxisChoice([False, False])
     init = True 
     for key in Results:
-        Error = Results[key][0]
+        Error = Results[key]['Error']
         if init == True:
             DistErrorCoeffs_fig.plotTwoAxis(-Error[['DistErr_x']], df_x = Error[['Time']], Name = key, Mode = 'markers', Opacity = .7, Size = 4)
             init = False
@@ -250,7 +248,7 @@ if ThesisPlots == True:
     DistErrorCoeffs_figZoom.settwoAxisChoice([False, False])
     init = True 
     for key in Results:
-        Error = Results[key][0]
+        Error = Results[key]['Error']
         if init == True:
             DistErrorCoeffs_figZoom.plotTwoAxis(-Error[['DistErr_x']], df_x = Error[['Time']], Name = key, Mode = 'markers', Opacity = .9, Size = 4)
             init = False
@@ -276,7 +274,7 @@ if ThesisPlots == True:
     VelErrorCoeffs_fig.settwoAxisChoice([False, False])
     init = True 
     for key in Results:
-        Error = Results[key][0]
+        Error = Results[key]['Error']
         if init == True:
             VelErrorCoeffs_fig.plotTwoAxis(-Error[['VelErr_x']], df_x = Error[['Time']], Name = key, Mode = 'markers')
             init = False
@@ -298,7 +296,7 @@ if ThesisPlots == True:
     VelErrorCoeffs_figZoom.settwoAxisChoice([False, False])
     init = True 
     for key in Results:
-        Error = Results[key][0]
+        Error = Results[key]['Error']
         if init == True:
             VelErrorCoeffs_figZoom.plotTwoAxis(-Error[['VelErr_x']], df_x = Error[['Time']], Name = key, Mode = 'markers')
             init = False
@@ -431,15 +429,18 @@ if OtherPlots == True:
     #%% Plots exploring increase in error in larger coefficients
     
     # Plot Regression Lines
-    regressionPlots_fig = PlotlyPlot()
+    Key = 'Coeff: K_4-K_4'
     
-    regressionPlots_fig.setTitle('Regression Plots')
-    regressionPlots_fig.setYaxisTitle('Ve_x')
-    regressionPlots_fig.setXaxisTitle('A')
-    regressionPlots_fig.plotNoDF(Results['Coeff: K_5-K_5'][5][1,:], Results['Coeff: K_5-K_5'][6], Mode = 'markers')
+    Xdata = np.squeeze(Results[Key]['A'][:,1:].T)
+    Ydata = Results[Key]['Ve_x']
+    regressionPlots_fig = go.Figure(go.Scatter(x = Xdata,y = Ydata, mode='markers'))
+    regressionPlots_fig.update_layout(title_text = 'linear Regression')
+    # Add Axis Labels
+    regressionPlots_fig.update_xaxes(title_text = 'A')
+    regressionPlots_fig.update_yaxes(title_text = 'Ve')
+    
     regressionPlots_fig.show()
     
-    regressionPlots_fig_2 = PlotlyPlot()
     
     #%%
     
