@@ -296,7 +296,7 @@ def AccelSim(referenceTrajectory, N_model, changeDefaultCoeff, CoeffDict, g):
     
     return [sensorSim, AccelObj]
 
-def RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_model, g,sigmaRPV, saveToPickel = False, WLSoption = True):
+def RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_model, g,sigmaRPV, saveToPickel = False, WLSoption = True, LeastSquaresMethod = 'LongHand'):
     
     #%% Error - Compare simulated acceleromter with track reference
     """
@@ -388,19 +388,18 @@ def RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_mod
         delta_t = np.diff(trackRPV['Time'])
         vel_sig = np.sqrt(2)*sigmaRPV/delta_t
         
-        # W = np.diag(vel_sig,0) - np.diag((.5*vel_sig[1:]),-1) - np.diag((.5*vel_sig[1:]),1)
+        W = np.diag(vel_sig,0) - np.diag((.5*vel_sig[1:]),-1) - np.diag((.5*vel_sig[1:]),1)
     
-        # W = np.linalg.inv(W)
+        W = np.linalg.inv(W)
         
-        W = np.diag(1/vel_sig) 
+        # W = np.diag(1/vel_sig) 
         
     A = trimmed_A
     
     AW = np.transpose(trimmed_A).dot(W)
     Ve_xW = W.dot(Ve_x)
     
-    ## CHANGE ME    
-    LeastSquaresMethod = 'LongHand' 
+
    
     if LeastSquaresMethod == 'Numpy':
 
@@ -434,7 +433,8 @@ def RegressionAnalysis(referenceTrajectory, trackRPV, AccelObj, sensorSim, N_mod
     coefficientDF = pd.DataFrame()
     
     coefficientDF = pd.concat((coefficientDF, pd.DataFrame.from_dict(AccelObj.AccelModelCoef, orient = 'index', columns= ['Accel Model'])))
-    coefficientDF = coefficientDF.append(pd.Series([0], index=coefficientDF.columns, name="V_0"))
+    
+    coefficientDF.loc['V_0'] = 0
     
     # Build Estimated Coefficient DF
     estimatedCoefficients = pd.DataFrame.from_dict(coeff_dict, orient = 'index', columns= ['Estimated Coefficients'])

@@ -110,7 +110,6 @@ VelErr_std = RPVVelErr.iloc[:, 2:].std(axis=1)
 RPVVelErr['Std'] = VelErr_std
 
 
-
 #%%
 Plots = False
 
